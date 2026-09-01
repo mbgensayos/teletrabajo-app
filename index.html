@@ -965,7 +965,9 @@
   // mínimo de presenciales (más alto en días de INICIO), las incompatibilidades, la
   // restricción de Natalia, con prioridad blanda para Mireia los martes (sin que acabe
   // por delante de los demás en total de T del mes), repartiendo el resto por menor carga.
-  function fillAdaptiveCoord(teamId){
+  // El recuento arranca con las T del mes anterior ya guardado, para que el desequilibrio
+  // de un mes se compense en el siguiente en vez de reiniciar el reparto cada vez.
+  async function fillAdaptiveCoord(teamId){
     var tm = state.config.teams[teamId];
     var y=state.year, m=state.month, nDays=daysInMonth(y,m);
     var sd = state.schedAll[teamId];
@@ -974,6 +976,13 @@
 
     var tCount = {};
     counted.forEach(function(p){ tCount[p] = countCode(sd, p, 'T'); });
+
+    var prevY = m===0 ? y-1 : y, prevM = m===0 ? 11 : m-1;
+    try{
+      var prevRes = await window.storage.get('sched:'+teamId+':'+monthKey(prevY,prevM), true);
+      var prevSd = JSON.parse(prevRes.value);
+      counted.forEach(function(p){ tCount[p] += countCode(prevSd, p, 'T'); });
+    }catch(e){ /* no hay mes anterior guardado: se arranca solo con el mes actual */ }
 
     function incompatibleWithChosen(p, chosenToday){
       return (tm.incompatible||[]).some(function(pair){
@@ -1040,7 +1049,7 @@
   }
 
   async function runAutoGenerate(){
-    var filled = team().autoAdaptive ? fillAdaptiveCoord(state.team) : fillAutoForTeam(state.team);
+    var filled = team().autoAdaptive ? await fillAdaptiveCoord(state.team) : fillAutoForTeam(state.team);
     await saveSched(state.team);
     showToast('Planificación generada: '+filled+' días rellenados');
     renderAll();

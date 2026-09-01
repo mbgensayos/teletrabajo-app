@@ -13,6 +13,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Teletrabajo UIH">
 
+<!-- ==== Icono (gota): favicon, miniatura de pestaña y acceso directo ==== -->
+<link rel="icon" href="icons/icon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="shortcut icon" href="icons/icon-32.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 
@@ -223,6 +229,10 @@
   .member-row .mname{ flex:1; }
   .member-row .mopts{ display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--ink-soft); }
   .member-row button{ border:none; background:none; color:var(--warn); cursor:pointer; font-size:15px; line-height:1; padding:2px 6px; }
+  .member-row button.mact{ color:var(--maroon); font-size:13px; }
+  .member-row select.mteamsel{ font-size:10.5px; padding:2px 4px; border:1px solid var(--line); border-radius:4px; }
+  .member-incompat-panel{ margin:2px 0 8px; padding:8px 10px; background:var(--linen); border-radius:6px; }
+  .member-incompat-panel label{ display:block; font-size:12px; padding:2px 0; }
   .addmember{ display:flex; gap:6px; margin-top:8px; }
   .addmember input{ flex:1; font-size:12px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-family:'IBM Plex Sans', sans-serif; }
   .addmember button{ font-size:12px; font-weight:600; padding:6px 12px; border-radius:6px; border:1.5px solid var(--maroon);
@@ -573,6 +583,7 @@
     mode: 'view',
     schedAll: {},
     monthEvents: {},
+    trialNames: {},
     currentAlerts: []
   };
 
@@ -750,6 +761,27 @@
       await window.storage.set('events:'+monthKey(state.year,state.month), JSON.stringify(state.monthEvents), true);
       showToast('Guardado ✓');
     }catch(e){ showToast('Error al guardar', true); }
+  }
+
+  async function loadTrialNames(){
+    try{
+      var res = await window.storage.get('trials:'+monthKey(state.year,state.month), true);
+      state.trialNames = JSON.parse(res.value) || {};
+    }catch(e){
+      state.trialNames = {};
+    }
+  }
+  async function saveTrialNames(){
+    try{ await window.storage.set('trials:'+monthKey(state.year,state.month), JSON.stringify(state.trialNames), true); }
+    catch(e){ showToast('Error al guardar el nombre del ensayo', true); }
+  }
+  // Etiqueta a mostrar para un evento en un día concreto: añade " – NOMBRE" cuando es
+  // un INICIO con ensayo clínico asociado.
+  function eventLabelWithTrial(evKey, day){
+    if(evKey==='inicio' && state.trialNames && state.trialNames[day]){
+      return EVENT_LABELS.inicio + ' – ' + state.trialNames[day];
+    }
+    return EVENT_LABELS[evKey];
   }
 
   async function loadAllSchedules(){
@@ -1148,7 +1180,7 @@
     if(evDays.length===0){ el.style.display='none'; return; }
     el.style.display = 'block';
     el.innerHTML = '📌 <b>Eventos este mes (todas las áreas):</b> ' + evDays.map(function(d){
-      return 'Día '+d+' — '+state.monthEvents[d].map(function(e){return EVENT_LABELS[e];}).join(', ');
+      return 'Día '+d+' — '+state.monthEvents[d].map(function(e){return eventLabelWithTrial(e, d);}).join(', ');
     }).join(' · ');
   }
 
@@ -1227,7 +1259,7 @@
       var weekend = isWeekend(y,m,d);
       var evts = evtsOf(d);
       var cls = 'daycell'+(weekend?' weekend':'')+(conflictDays[d]&&!weekend?' warnday':'')+(!conflictDays[d]&&exDays[d]&&!weekend?' exday':'')+(evts.length&&!weekend?' dayevent-col':'');
-      var evtLabel = evts.map(function(e){return EVENT_LABELS[e];}).join(', ');
+      var evtLabel = evts.map(function(e){return eventLabelWithTrial(e, d);}).join(', ');
       var title = evts.length ? ' title="'+escapeHtml(evtLabel)+(conflictDays[d]?' · incidencia sin resolver':'')+'"' : (conflictDays[d] ? ' title="Incidencia sin resolver este día"' : (exDays[d] ? ' title="Excepción aprobada este día"' : ''));
       html += '<th class="'+cls+'"'+title+'><div class="wd">'+WD[dow]+'</div></th>';
     }
@@ -1248,7 +1280,7 @@
         var editableE = (state.mode==='edit' && !weekendE);
         html += '<td class="daycell event-cell'+(weekendE?' weekend':'')+(isSet?' set':'')+(editableE?' editable':'')+'"'
               + ' data-day="'+de+'" data-event="'+evKey+'"'
-              + (weekendE ? '' : ' title="'+escapeHtml(EVENT_LABELS[evKey])+(isSet?' · activo este día':'')+'"')
+              + (weekendE ? '' : ' title="'+escapeHtml(eventLabelWithTrial(evKey, de))+(isSet?' · activo este día':'')+'"')
               + '>'+(weekendE?'':(isSet?'✓':'—'))+'</td>';
       }
       html += '<td class="totalcell" style="background:transparent;"></td><td class="totalcell" style="background:transparent;"></td></tr>';
@@ -1266,7 +1298,7 @@
         var conflict = conflictCells[key];
         var exok = !conflict && exCells[key];
         var evts4 = evtsOf(d);
-        var evtLabel4 = evts4.map(function(e){return EVENT_LABELS[e];}).join(', ');
+        var evtLabel4 = evts4.map(function(e){return eventLabelWithTrial(e, d);}).join(', ');
         var display = code ? (ICON[code] || code) : (weekend ? '' : '🏢');
         html += '<td class="daycell'+(code?' '+code:' empty'+(weekend?'':' blank'))+(weekend?' weekend':'')+(editable?' editable':'')+(today?' todaycol':'')+(conflict?' conflict':'')+(exok?' exok':'')+(evts4.length&&!weekend?' dayevent-col':'')+'"'
               + ' data-person="'+encAttr(person)+'" data-day="'+d+'"'
@@ -1304,7 +1336,18 @@
         var evKey = td.getAttribute('data-event');
         var list = state.monthEvents[day] || [];
         var idx = list.indexOf(evKey);
-        if(idx>=0){ list.splice(idx,1); } else { list.push(evKey); }
+        if(idx>=0){
+          list.splice(idx,1);
+        } else {
+          if(evKey==='inicio'){
+            var trial = prompt('Nombre del ensayo clínico para este día de INICIO:', state.trialNames[day]||'');
+            if(trial===null) return; // cancelado: no se activa el INICIO
+            trial = trial.trim();
+            if(trial){ state.trialNames[day] = trial; } else { delete state.trialNames[day]; }
+            await saveTrialNames();
+          }
+          list.push(evKey);
+        }
         if(list.length){ state.monthEvents[day] = list; } else { delete state.monthEvents[day]; }
         await saveMonthEvents();
         state.currentAlerts = computeAlerts(state.team);
@@ -1540,6 +1583,33 @@
     document.getElementById('summaryWrap').innerHTML = html;
   }
 
+  // ---- Gestión de trabajadores: alta/baja/edición, compartido por renderSettings ----
+  function removeMemberFromTeam(tm, person){
+    var i = tm.members.indexOf(person);
+    if(i>=0) tm.members.splice(i,1);
+    tm.incompatible = (tm.incompatible||[]).filter(function(pr){return pr[0]!==person && pr[1]!==person;});
+    tm.excludedFromMin = (tm.excludedFromMin||[]).filter(function(p){return p!==person;});
+    tm.newHireRestrictions = (tm.newHireRestrictions||[]).filter(function(r){return r.person!==person;});
+    if(tm.auto && tm.auto.type==='per-person'){ tm.auto.rules = tm.auto.rules.filter(function(r){return r.person!==person;}); }
+    delete sched().schedule[person];
+  }
+  function renameMemberInTeam(tm, oldName, newName){
+    var i = tm.members.indexOf(oldName);
+    if(i>=0) tm.members[i] = newName;
+    (tm.excludedFromMin||[]).forEach(function(p,idx,arr){ if(p===oldName) arr[idx]=newName; });
+    (tm.incompatible||[]).forEach(function(pr){ if(pr[0]===oldName) pr[0]=newName; if(pr[1]===oldName) pr[1]=newName; });
+    (tm.newHireRestrictions||[]).forEach(function(r){ if(r.person===oldName) r.person=newName; });
+    if(tm.auto && tm.auto.type==='per-person'){ tm.auto.rules.forEach(function(r){ if(r.person===oldName) r.person=newName; }); }
+    var sd = sched();
+    if(sd.schedule[oldName]){ sd.schedule[newName] = sd.schedule[oldName]; delete sd.schedule[oldName]; }
+  }
+  function moveMemberToTeam(tm, targetTid, person){
+    removeMemberFromTeam(tm, person);
+    var target = state.config.teams[targetTid];
+    target.excludedFromMin = target.excludedFromMin || [];
+    if(target.members.indexOf(person)<0) target.members.push(person);
+  }
+
   function renderSettings(){
     if(state.team==='summary') return;
     var tm = team();
@@ -1547,25 +1617,78 @@
     var ml = document.getElementById('memberList');
     ml.innerHTML = '';
     orderedMembers(tm).forEach(function(person){
-      var i = tm.members.indexOf(person);
+      var wrap = document.createElement('div');
       var row = document.createElement('div');
       row.className = 'member-row';
       var excludedChecked = (tm.excludedFromMin||[]).indexOf(person)>=0;
+      var otherTeamIds = Object.keys(state.config.teams).filter(function(tid){ return tid!==state.team; });
+      var teamOptions = '<option value="">Mover a…</option>' + otherTeamIds.map(function(tid){
+        return '<option value="'+encAttr(tid)+'">'+escapeHtml(state.config.teams[tid].name)+'</option>';
+      }).join('');
       row.innerHTML = '<span class="mname">'+escapeHtml(person)+'</span>'
-        + '<span class="mopts"><label><input type="checkbox" data-person="'+encAttr(person)+'" class="exclchk" '+(excludedChecked?'checked':'')+'> excluir de mínimos</label></span>';
-      var btn = document.createElement('button');
-      btn.textContent = '×'; btn.title = 'Quitar del equipo';
-      btn.onclick = async function(){
-        tm.members.splice(i,1);
-        tm.incompatible = (tm.incompatible||[]).filter(function(pr){return pr[0]!==person && pr[1]!==person;});
-        tm.excludedFromMin = (tm.excludedFromMin||[]).filter(function(p){return p!==person;});
-        if(tm.auto && tm.auto.type==='per-person'){ tm.auto.rules = tm.auto.rules.filter(function(r){return r.person!==person;}); }
-        delete sched().schedule[person];
+        + '<span class="mopts">'
+        +   '<label><input type="checkbox" data-person="'+encAttr(person)+'" class="exclchk" '+(excludedChecked?'checked':'')+'> excluir de mínimos</label>'
+        +   '<button type="button" class="mact rename" title="Renombrar">✎</button>'
+        +   '<button type="button" class="mact incompat" title="Gestionar incompatibilidades">⚠</button>'
+        +   '<select class="mteamsel" title="Mover a otro equipo">'+teamOptions+'</select>'
+        + '</span>';
+      var delBtn = document.createElement('button');
+      delBtn.textContent = '×'; delBtn.title = 'Quitar del equipo';
+      delBtn.onclick = async function(){
+        if(!confirm('¿Seguro que quieres eliminar a "'+person+'" del equipo «'+tm.name+'»? Esta acción no se puede deshacer.')) return;
+        removeMemberFromTeam(tm, person);
         await saveConfig(); await saveSched(state.team);
         renderAll();
       };
-      row.appendChild(btn);
-      ml.appendChild(row);
+      row.appendChild(delBtn);
+      wrap.appendChild(row);
+
+      var incompatPanel = document.createElement('div');
+      incompatPanel.className = 'member-incompat-panel';
+      incompatPanel.style.display = 'none';
+      var others = tm.members.filter(function(p){ return p!==person; });
+      incompatPanel.innerHTML = '<div class="help">'+escapeHtml(person)+' — incompatible con:</div>'
+        + (others.length ? others.map(function(p){
+            var isIncompat = (tm.incompatible||[]).some(function(pr){ return (pr[0]===person&&pr[1]===p)||(pr[0]===p&&pr[1]===person); });
+            return '<label><input type="checkbox" class="incompatchk" data-other="'+encAttr(p)+'" '+(isIncompat?'checked':'')+'> '+escapeHtml(p)+'</label>';
+          }).join('') : '<div class="muted">No hay más personas en este equipo.</div>');
+      wrap.appendChild(incompatPanel);
+      ml.appendChild(wrap);
+
+      row.querySelector('.rename').onclick = async function(){
+        var next = prompt('Nuevo nombre para "'+person+'":', person);
+        if(next===null) return;
+        next = next.trim();
+        if(!next || next===person) return;
+        if(tm.members.indexOf(next)>=0){ showToast('Ya existe alguien con ese nombre en el equipo', true); return; }
+        renameMemberInTeam(tm, person, next);
+        await saveConfig(); await saveSched(state.team);
+        renderAll();
+      };
+      row.querySelector('.incompat').onclick = function(){
+        incompatPanel.style.display = incompatPanel.style.display==='none' ? 'block' : 'none';
+      };
+      incompatPanel.querySelectorAll('.incompatchk').forEach(function(chk){
+        chk.onchange = async function(){
+          var other = decAttr(chk.getAttribute('data-other'));
+          tm.incompatible = tm.incompatible || [];
+          var idx = tm.incompatible.findIndex(function(pr){ return (pr[0]===person&&pr[1]===other)||(pr[0]===other&&pr[1]===person); });
+          if(chk.checked){ if(idx<0) tm.incompatible.push([person, other]); }
+          else { if(idx>=0) tm.incompatible.splice(idx,1); }
+          await saveConfig();
+          state.currentAlerts = computeAlerts(state.team);
+          renderTable(); renderAlerts();
+        };
+      });
+      row.querySelector('.mteamsel').onchange = async function(){
+        var targetTid = decAttr(this.value);
+        var selectEl = this;
+        if(!targetTid) return;
+        if(!confirm('¿Mover a "'+person+'" al equipo «'+state.config.teams[targetTid].name+'»?')){ selectEl.value=''; return; }
+        moveMemberToTeam(tm, targetTid, person);
+        await saveConfig(); await saveSched(state.team);
+        renderAll();
+      };
     });
     ml.querySelectorAll('.exclchk').forEach(function(chk){
       chk.onchange = async function(){
@@ -1854,11 +1977,11 @@
 
   document.getElementById('prevMonth').onclick = async function(){
     state.month--; if(state.month<0){ state.month=11; state.year--; }
-    await loadAllSchedules(); await loadMonthEvents(); await maybeAutoFillOnLoad(); renderAll();
+    await loadAllSchedules(); await loadMonthEvents(); await loadTrialNames(); await maybeAutoFillOnLoad(); renderAll();
   };
   document.getElementById('nextMonth').onclick = async function(){
     state.month++; if(state.month>11){ state.month=0; state.year++; }
-    await loadAllSchedules(); await loadMonthEvents(); await maybeAutoFillOnLoad(); renderAll();
+    await loadAllSchedules(); await loadMonthEvents(); await loadTrialNames(); await maybeAutoFillOnLoad(); renderAll();
   };
 
   document.getElementById('settingsToggle').onclick = function(){
@@ -1870,6 +1993,7 @@
     var input = document.getElementById('newMemberInput');
     var name = input.value.trim();
     if(!name) return;
+    if(team().members.indexOf(name)>=0){ showToast('Ya existe alguien con ese nombre en el equipo', true); return; }
     team().members.push(name);
     input.value = '';
     await saveConfig();
@@ -2010,6 +2134,7 @@
     await migrateStoredData();
     await loadAllSchedules();
     await loadMonthEvents();
+    await loadTrialNames();
     await maybeAutoFillOnLoad();
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').style.display = 'block';

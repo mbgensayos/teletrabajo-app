@@ -403,6 +403,11 @@
         </div>
       </div>
       <div class="card">
+        <h3>Máximo de teletrabajo semanal</h3>
+        <div id="maxWeeklyList"></div>
+        <div class="help">Por persona, en días de teletrabajo por semana. Vacío o 0 = sin límite. La generación automática lo respeta siempre.</div>
+      </div>
+      <div class="card">
         <h3>Incompatibilidades de teletrabajo</h3>
         <div id="incompatList"></div>
         <div class="addpair">
@@ -1034,7 +1039,7 @@
           // nadie: prioriza a quien lleve menos T este mes entre quienes aún puedan.
           var chosenToday = tm.members.filter(function(p){ return (sd.schedule[p]||{})[d]==='T'; });
           var candidates = tm.members.filter(function(p){
-            return !(sd.schedule[p]||{})[d] && underCaps(tm, p, monthCount, weeklyCount);
+            return !(sd.schedule[p]||{})[d] && !isInNewHireWindow(tm, p, y, m, d) && underCaps(tm, p, monthCount, weeklyCount);
           });
           candidates.sort(function(a,b){ return (tCountAlt[a]||0)-(tCountAlt[b]||0); });
           candidates.forEach(function(person){
@@ -1052,6 +1057,7 @@
           var rdays = personAutoDays(rule, y, m, d);
           sd.schedule[rule.person] = sd.schedule[rule.person] || {};
           if(rdays.indexOf(dow)>=0 && !sd.schedule[rule.person][d]){
+            if(isInNewHireWindow(tm, rule.person, y, m, d)) return;
             if(!underCaps(tm, rule.person, monthCount, weeklyCount)) return;
             sd.schedule[rule.person][d]='T'; filled++;
             monthCount[rule.person] = (monthCount[rule.person]||0)+1;
@@ -1902,6 +1908,27 @@
       await saveConfig();
       renderAll();
     };
+
+    var mwl = document.getElementById('maxWeeklyList');
+    mwl.innerHTML = '';
+    tm.maxWeekly = tm.maxWeekly || {};
+    orderedMembers(tm).forEach(function(person){
+      var row = document.createElement('div');
+      row.className = 'member-row';
+      row.innerHTML = '<span class="mname">'+escapeHtml(person)+'</span>';
+      var input = document.createElement('input');
+      input.type = 'number'; input.min = '0'; input.style.cssText = 'width:60px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;text-align:center;';
+      input.value = tm.maxWeekly[person] || '';
+      input.placeholder = 'sin límite';
+      input.onchange = async function(){
+        var v = parseInt(input.value)||0;
+        if(v>0){ tm.maxWeekly[person] = v; } else { delete tm.maxWeekly[person]; }
+        await saveConfig();
+        renderSettings();
+      };
+      row.appendChild(input);
+      mwl.appendChild(row);
+    });
 
     var il = document.getElementById('incompatList');
     il.innerHTML = '';

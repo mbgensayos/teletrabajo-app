@@ -1063,12 +1063,20 @@
     return filled;
   }
 
-  // Relleno adaptativo para Coordinadores: día a día, solo celdas vacías, respetando el
-  // mínimo de presenciales (más alto en días de INICIO), las incompatibilidades, la
-  // restricción de Natalia, con prioridad blanda para Mireia los martes (sin que acabe
-  // por delante de los demás en total de T del mes), repartiendo el resto por menor carga.
-  // El recuento arranca con las T del mes anterior ya guardado, para que el desequilibrio
-  // de un mes se compense en el siguiente en vez de reiniciar el reparto cada vez.
+  // Relleno adaptativo para Coordinadores. Reparte el teletrabajo a un ritmo constante a
+  // lo largo de TODO el mes en vez de agotar cuotas mensuales en las primeras semanas:
+  // 1) nunca incumple incompatibilidades ni la restricción de Natalia (obligatorio),
+  // 2) nunca baja del mínimo de presenciales, ni supera el máximo semanal/mensual de
+  //    nadie (obligatorio),
+  // 3) cada día solo se asignan como mucho ~1-2 T (tope dinámico según cuántas personas
+  //    y cuánta cuota mensual hay, para no concentrar todo al principio),
+  // 4) cada persona con máximo mensual configurado tiene un "ritmo ideal" (cuota÷semanas
+  //    transcurridas) y se prioriza a quien va más retrasado respecto a su ritmo,
+  // 5) empates se rompen por menor total acumulado (incluye el mes anterior, para
+  //    compensar meses) y, si aun así hay empate, al azar — para variar el patrón entre
+  //    personas en vez de repetir siempre la misma combinación.
+  // Mireia conserva una pequeña preferencia blanda los martes, pero no le permite
+  // adelantarse a alguien con un retraso de ritmo real.
   async function fillAdaptiveCoord(teamId){
     var tm = state.config.teams[teamId];
     var y=state.year, m=state.month, nDays=daysInMonth(y,m);
@@ -1094,14 +1102,65 @@
       });
     }
 
-    var weekMonday = null, weeklyCount = {};
+    // Semanas del mes (lunes de cada una, en orden) y tope diario dinámico: cuota total
+    // configurada entre todos los días laborables, redondeado, mínimo 1.
+    var bizDays = [], weekOfMonday = {}, weeksOrder = [];
+    for(var dd=1; dd<=nDays; dd++){
+      if(isWeekend(y,m,dd)) continue;
+      bizDays.push(dd);
+      var mk = mondayOf(new Date(y,m,dd)).getTime();
+      if(weekOfMonday[mk]===undefined){ weekOfMonday[mk] = weeksOrder.length; weeksOrder.push(mk); }
+    }
+    var numWeeks = weeksOrder.length || 1;
+    var totalDemand = counted.reduce(function(sum,p){ return sum + ((tm.maxMonthly&&tm.maxMonthly[p])||0); }, 0);
+    var perDayCap = Math.max(1, Math.round(totalDemand / (bizDays.length||1)));
+    // Ventana de "recuperación" al final del mes: en vez de relajar solo el último día
+    // (que con varias incompatibilidades puede ser matemáticamente insuficiente para que
+    // todos lleguen a su máximo — como mucho una persona de cada pareja incompatible por
+    // día), se relaja el tope de reparto en los últimos días laborables del mes, dando
+    // margen real para que el máximo mensual (prioridad más alta que el reparto uniforme)
+    // se cumpla igualmente.
+    var catchupDays = bizDays.slice(Math.max(0, bizDays.length-6));
+
+    function idealSoFar(p, weekIdx){
+      var cap = tm.maxMonthly && tm.maxMonthly[p];
+      if(!cap) return null;
+      return cap * (weekIdx+1) / numWeeks;
+    }
+    function priorityOf(p, dow, weekIdx){
+      var ideal = idealSoFar(p, weekIdx);
+      var pr = ideal===null ? -(tCount[p]||0)/10 : (ideal - (monthCount[p]||0));
+      if(dow===2 && p==='Mireia Bañuls') pr += 0.5;
+      return pr + Math.random()*0.01; // variar el orden entre ejecuciones cuando hay empate real
+    }
+
+    var weekMonday = null, weeklyCount = {}, weeklyAllowance = {};
     for(var d=1; d<=nDays; d++){
       if(isWeekend(y,m,d)) continue;
       var dow = new Date(y,m,d).getDay();
       var mondayKey = mondayOf(new Date(y,m,d)).getTime();
+      var weekIdx = weekOfMonday[mondayKey];
+      var inCatchup = catchupDays.indexOf(d)>=0;
       if(mondayKey !== weekMonday){
         weekMonday = mondayKey; weeklyCount = {};
-        counted.forEach(function(p){ weeklyCount[p]=0; });
+        // Cuota de ESTA semana concreta para cada persona: lo que le falta para llegar a
+        // su ritmo ideal acumulado a fecha de fin de esta semana. Es un tope duro (no solo
+        // una preferencia), así nadie agota su mes en las primeras semanas.
+        counted.forEach(function(p){
+          weeklyCount[p]=0;
+          var ideal = idealSoFar(p, weekIdx);
+          var cap = tm.maxMonthly && tm.maxMonthly[p];
+          weeklyAllowance[p] = !cap ? Infinity : Math.max(0, Math.ceil(ideal - monthCount[p]));
+        });
+      }
+      // En la ventana de recuperación no queda margen para seguir compensando más
+      // adelante: si aquí se frenara por ritmo, alguien podría quedarse sin llegar a su
+      // máximo mensual, y ese máximo tiene prioridad sobre el reparto equilibrado.
+      if(inCatchup){
+        counted.forEach(function(p){
+          var cap = tm.maxMonthly && tm.maxMonthly[p];
+          if(cap) weeklyAllowance[p] = Math.max(weeklyAllowance[p]||0, cap - monthCount[p]);
+        });
       }
       var dayEvts = state.monthEvents[d] || [];
       var isInicioDay = dayEvts.indexOf('inicio')>=0;
@@ -1113,36 +1172,25 @@
         if(c===''){ currentPresencial++; } else { alreadySet[p]=true; }
       });
 
-      var budget = currentPresencial - effectiveMin;
+      // En la ventana de recuperación no se limita al tope diario "de reparto": si a
+      // alguien le falta llegar a su máximo mensual, se le da hueco mientras el mínimo
+      // de presenciales lo permita (igual que se relaja weeklyAllowance más arriba).
+      var budget = inCatchup ? (currentPresencial - effectiveMin) : Math.min(currentPresencial - effectiveMin, perDayCap);
       if(budget<=0) continue;
 
       var remaining = counted.filter(function(p){
-        return !alreadySet[p] && !isInNewHireWindow(tm, p, y, m, d) && underCaps(tm, p, monthCount, weeklyCount);
+        return !alreadySet[p] && !isInNewHireWindow(tm, p, y, m, d)
+          && underCaps(tm, p, monthCount, weeklyCount) && weeklyCount[p] < weeklyAllowance[p];
       });
       if(!remaining.length) continue;
 
+      var priorities = {};
+      remaining.forEach(function(p){ priorities[p] = priorityOf(p, dow, weekIdx); });
+      remaining.sort(function(a,b){ return priorities[b] - priorities[a]; });
+
       var chosenToday = [];
-
-      if(dow===2 && remaining.indexOf('Mireia Bañuls')>=0){
-        var others = counted.filter(function(p){ return p!=='Mireia Bañuls'; });
-        var minOthers = Math.min.apply(null, others.map(function(p){ return tCount[p]; }));
-        if(tCount['Mireia Bañuls']<=minOthers && !incompatibleWithChosen('Mireia Bañuls', chosenToday)){
-          chosenToday.push('Mireia Bañuls');
-          remaining = remaining.filter(function(p){ return p!=='Mireia Bañuls'; });
-          budget--;
-        }
-      }
-
-      while(budget>0 && remaining.length){
-        remaining.sort(function(a,b){ return tCount[a]-tCount[b]; });
-        var pick = null;
-        for(var i=0;i<remaining.length;i++){
-          if(!incompatibleWithChosen(remaining[i], chosenToday)){ pick = remaining[i]; break; }
-        }
-        if(!pick) break;
-        chosenToday.push(pick);
-        remaining = remaining.filter(function(p){ return p!==pick; });
-        budget--;
+      for(var i=0; i<remaining.length && chosenToday.length<budget; i++){
+        if(!incompatibleWithChosen(remaining[i], chosenToday)) chosenToday.push(remaining[i]);
       }
 
       chosenToday.forEach(function(p){

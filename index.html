@@ -577,8 +577,13 @@
           ['Domínguez Parrilla, Lidia','Millán Carneros, Javier'],
           ['Tatis Beltre, Elisa','Agudo López, Patricia']
         ],
-        auto:{ type:'alternating-week', weekARefStart:'2025-12-01', weekADays:[1,3,5], weekBDays:[2,4] },
-        maxWeekly:{}, maxMonthly:{}
+        auto:null,
+        autoAdaptive:true,
+        maxWeekly:{},
+        maxMonthly:{
+          'Agudo López, Patricia':10, 'Domínguez Parrilla, Lidia':10,
+          'Millán Carneros, Javier':10, 'Tatis Beltre, Elisa':10
+        }
       },
       datas: {
         name:'Data Entry',
@@ -1069,11 +1074,13 @@
     return filled;
   }
 
-  // Relleno adaptativo para Coordinadores. Reparte el teletrabajo a un ritmo constante a
-  // lo largo de TODO el mes en vez de agotar cuotas mensuales en las primeras semanas:
-  // 1) nunca incumple incompatibilidades ni la restricción de Natalia (obligatorio),
-  // 2) nunca baja del mínimo de presenciales, ni supera el máximo semanal/mensual de
-  //    nadie (obligatorio),
+  // Relleno adaptativo genérico (Coordinadores y, ahora, Gestión — cualquier equipo con
+  // autoAdaptive:true). Reparte el teletrabajo a un ritmo constante a lo largo de TODO el
+  // mes en vez de agotar cuotas mensuales en las primeras semanas:
+  // 1) nunca incumple incompatibilidades ni restricciones de nueva incorporación
+  //    (obligatorio),
+  // 2) nunca baja del mínimo de presenciales del equipo (0 = sin mínimo), ni supera el
+  //    máximo semanal/mensual de nadie (obligatorio),
   // 3) cada día solo se asignan como mucho ~1-2 T (tope dinámico según cuántas personas
   //    y cuánta cuota mensual hay, para no concentrar todo al principio),
   // 4) cada persona con máximo mensual configurado tiene un "ritmo ideal" (cuota÷semanas
@@ -1081,8 +1088,8 @@
   // 5) empates se rompen por menor total acumulado (incluye el mes anterior, para
   //    compensar meses) y, si aun así hay empate, al azar — para variar el patrón entre
   //    personas en vez de repetir siempre la misma combinación.
-  // Mireia conserva una pequeña preferencia blanda los martes, pero no le permite
-  // adelantarse a alguien con un retraso de ritmo real.
+  // Mireia (solo en Coordinadores) conserva una pequeña preferencia blanda los martes,
+  // pero no le permite adelantarse a alguien con un retraso de ritmo real.
   async function fillAdaptiveCoord(teamId){
     var tm = state.config.teams[teamId];
     var y=state.year, m=state.month, nDays=daysInMonth(y,m);
@@ -1126,7 +1133,7 @@
     // día), se relaja el tope de reparto en los últimos días laborables del mes, dando
     // margen real para que el máximo mensual (prioridad más alta que el reparto uniforme)
     // se cumpla igualmente.
-    var catchupDays = bizDays.slice(Math.max(0, bizDays.length-6));
+    var catchupDays = bizDays.slice(Math.max(0, bizDays.length-12));
 
     function idealSoFar(p, weekIdx){
       var cap = tm.maxMonthly && tm.maxMonthly[p];
@@ -1136,7 +1143,7 @@
     function priorityOf(p, dow, weekIdx){
       var ideal = idealSoFar(p, weekIdx);
       var pr = ideal===null ? -(tCount[p]||0)/10 : (ideal - (monthCount[p]||0));
-      if(dow===2 && p==='Mireia Bañuls') pr += 0.5;
+      if(teamId==='coord' && dow===2 && p==='Mireia Bañuls') pr += 0.5; // preferencia solo de Coordinadores
       return pr + Math.random()*0.01; // variar el orden entre ejecuciones cuando hay empate real
     }
 

@@ -1,0 +1,11 @@
+{
+  "name": "Teletrabajo Hematologia UIH",
+  "short_name": "Teletrabajo UIH",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5FAFC",
+  "theme_color": "#2C6E8C",
+  "lang": "es",
+  "icons": []
+}

@@ -936,6 +936,17 @@
     var y=state.year, m=state.month, nDays=daysInMonth(y,m);
     var sd = state.schedAll[teamId];
     var filled = 0;
+    var tCountAlt = {};
+    if(tm.auto.type==='alternating-week'){
+      tm.members.forEach(function(p){ tCountAlt[p] = countCode(sd, p, 'T'); });
+    }
+    function incompatibleWithChosen(p, chosenToday){
+      return (tm.incompatible||[]).some(function(pair){
+        if(pair[0]===p && chosenToday.indexOf(pair[1])>=0) return true;
+        if(pair[1]===p && chosenToday.indexOf(pair[0])>=0) return true;
+        return false;
+      });
+    }
     for(var d=1; d<=nDays; d++){
       if(isWeekend(y,m,d)) continue;
       var dow = new Date(y,m,d).getDay();
@@ -943,9 +954,18 @@
         var wt = computeWeekType(tm.auto,y,m,d);
         var days = wt==='A' ? tm.auto.weekADays : tm.auto.weekBDays;
         if(days.indexOf(dow)>=0){
-          tm.members.forEach(function(person){
+          // Todo el equipo debería teletrabajar este día, pero nunca los dos de una
+          // pareja incompatible a la vez: prioriza a quien lleve menos T este mes, y si
+          // eso deja fuera al compañero incompatible, ese se queda presencial hoy.
+          var chosenToday = tm.members.filter(function(p){ return (sd.schedule[p]||{})[d]==='T'; });
+          var candidates = tm.members.filter(function(p){ return !(sd.schedule[p]||{})[d]; });
+          candidates.sort(function(a,b){ return (tCountAlt[a]||0)-(tCountAlt[b]||0); });
+          candidates.forEach(function(person){
+            if(incompatibleWithChosen(person, chosenToday)) return;
             sd.schedule[person] = sd.schedule[person] || {};
-            if(!sd.schedule[person][d]){ sd.schedule[person][d]='T'; filled++; }
+            sd.schedule[person][d]='T'; filled++;
+            chosenToday.push(person);
+            tCountAlt[person] = (tCountAlt[person]||0)+1;
           });
         }
       } else if(tm.auto.type==='per-person'){

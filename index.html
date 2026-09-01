@@ -589,13 +589,15 @@
         name:'Data Entry',
         members:['Muñoz Marañón, Olga','López González, Miriam','Baratas Álvarez, Lucía'],
         excludedFromMin:[],
-        minPresencial:1, minPresencialInicio:0,
-        incompatible:[],
+        minPresencial:0, minPresencialInicio:0,
+        incompatible:[
+          ['Muñoz Marañón, Olga','Baratas Álvarez, Lucía']
+        ],
         maxWeekly:{}, maxMonthly:{},
         auto:{ type:'per-person', rules:[
           {person:'López González, Miriam', mode:'fixed', days:[1,2]},
-          {person:'Muñoz Marañón, Olga', mode:'fixed', days:[1,3,5]},
-          {person:'Baratas Álvarez, Lucía', mode:'fixed', days:[4,5]}
+          {person:'Muñoz Marañón, Olga', mode:'alt-week', refStart:'2025-12-01', aDays:[1,3], bDays:[1,5]},
+          {person:'Baratas Álvarez, Lucía', mode:'alt-week', refStart:'2025-12-01', aDays:[4,5], bDays:[3,4]}
         ]}
       }
     }
@@ -905,6 +907,10 @@
       var idx = ((weeksSince(rule.refStart, y, m, day) % n) + n) % n;
       return [rule.cycleDays[idx]];
     }
+    if(rule.mode==='alt-week'){
+      var wt2 = computeWeekType({weekARefStart: rule.refStart}, y, m, day);
+      return wt2==='A' ? rule.aDays : rule.bDays;
+    }
     return [];
   }
   function expectedAutoCode(tm, person, y, m, day, dow){
@@ -1058,13 +1064,16 @@
           });
         }
       } else if(tm.auto.type==='per-person'){
+        var chosenTodayPP = tm.members.filter(function(p){ return (sd.schedule[p]||{})[d]==='T'; });
         tm.auto.rules.forEach(function(rule){
           var rdays = personAutoDays(rule, y, m, d);
           sd.schedule[rule.person] = sd.schedule[rule.person] || {};
           if(rdays.indexOf(dow)>=0 && !sd.schedule[rule.person][d]){
             if(isInNewHireWindow(tm, rule.person, y, m, d)) return;
             if(!underCaps(tm, rule.person, monthCount, weeklyCount)) return;
+            if(incompatibleWithChosen(rule.person, chosenTodayPP)) return;
             sd.schedule[rule.person][d]='T'; filled++;
+            chosenTodayPP.push(rule.person);
             monthCount[rule.person] = (monthCount[rule.person]||0)+1;
             weeklyCount[rule.person] = (weeklyCount[rule.person]||0)+1;
           }
@@ -2027,6 +2036,15 @@
           block.innerHTML = '<div class="rulename">'+escapeHtml(rule.person)+' — días fijos</div><div class="daychecks" id="fixedDays'+ri+'"></div>';
           ae.appendChild(block);
           renderDayChecks('fixedDays'+ri, rule.days, async function(days){ rule.days = days; await saveConfig(); refreshAfterAutoEdit(); });
+        } else if(rule.mode==='alt-week'){
+          block.innerHTML = '<div class="rulename">'+escapeHtml(rule.person)+' — semanas alternas</div>'
+            + '<div class="field"><label>Lunes de referencia (inicio Semana A)</label><input type="date" id="weekRefPP'+ri+'" value="'+rule.refStart+'"></div>'
+            + '<div class="field"><label>Semana A — días</label><div class="daychecks" id="aDaysPP'+ri+'"></div></div>'
+            + '<div class="field"><label>Semana B — días</label><div class="daychecks" id="bDaysPP'+ri+'"></div></div>';
+          ae.appendChild(block);
+          renderDayChecks('aDaysPP'+ri, rule.aDays, async function(days){ rule.aDays = days; await saveConfig(); refreshAfterAutoEdit(); });
+          renderDayChecks('bDaysPP'+ri, rule.bDays, async function(days){ rule.bDays = days; await saveConfig(); refreshAfterAutoEdit(); });
+          document.getElementById('weekRefPP'+ri).onchange = async function(){ rule.refStart = this.value; await saveConfig(); refreshAfterAutoEdit(); };
         } else {
           block.innerHTML = '<div class="rulename">'+escapeHtml(rule.person)+' — meses alternos</div>'
             + '<div class="field"><label>Mes de referencia (= M1)</label><input type="month" id="monthRef'+ri+'" value="'+rule.refStart+'"></div>'

@@ -893,6 +893,15 @@
           }
         });
       }
+
+      (tm.newHireRestrictions||[]).forEach(function(r){
+        var actualNH = (sd.schedule[r.person]||{})[d] || '';
+        if(actualNH==='T' && isInNewHireWindow(tm, r.person, y, m, d)){
+          alerts.push({ id:'newhire:'+teamId+':'+d+':'+r.person, day:d, type:'newhire',
+            message:r.person+' tiene «T» durante su periodo de nueva incorporación (primeros 6 meses)',
+            people:[r.person] });
+        }
+      });
     }
 
     var exceptions = sd.exceptions || [];
@@ -1210,16 +1219,13 @@
             td.innerHTML = originalHTML;
             return;
           }
-          if(val==='T' && isInNewHireWindow(team(), person, state.year, state.month, parseInt(day))){
-            showToast(person+' no puede teletrabajar durante sus primeros 6 meses.', true);
-            td.innerHTML = originalHTML;
-            return;
-          }
+          var flagNewHire = val==='T' && isInNewHireWindow(team(), person, state.year, state.month, parseInt(day));
           sd.schedule[person] = sd.schedule[person] || {};
           if(val===''){ delete sd.schedule[person][day]; } else { sd.schedule[person][day] = val; }
           saveSched(state.team).then(function(){
             state.currentAlerts = computeAlerts(state.team);
             renderTable(); renderAlerts();
+            if(flagNewHire){ showToast(person+' teletrabaja durante su periodo de nueva incorporación — revisa la incidencia en el panel.', true); }
           });
         }
         function cancel(){ if(committed) return; committed = true; td.innerHTML = originalHTML; }

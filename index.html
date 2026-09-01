@@ -91,6 +91,7 @@
   .pillbtn:hover{ border-color:var(--maroon); color:var(--maroon-deep); }
   .pillbtn.on{ background:var(--warn); border-color:var(--warn); color:#fff; }
   .pillbtn.auto{ border-color:var(--teal); color:var(--teal); }
+  .pillbtn.clearsel{ border-color:var(--warn); color:var(--warn); }
   .pillbtn.request{ border-color:var(--plum); color:var(--plum); }
   .export-btn{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:600; padding:7px 12px;
     border-radius:7px; border:1.5px solid var(--line); background:var(--panel); color:var(--ink-soft); cursor:pointer; }
@@ -217,9 +218,9 @@
   .req-actions button.ghost{ background:transparent; color:var(--ink-soft); border-color:var(--line); }
 
   .settings-toggle{ margin-top:16px; font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:600;
-    background:none; border:1.5px dashed var(--line); color:var(--ink-soft); padding:9px 14px; border-radius:8px;
+    background:#F2F2F2; border:1.5px solid #B3B3B3; color:#5C5C5C; padding:9px 14px; border-radius:8px;
     cursor:pointer; width:100%; text-align:left; }
-  .settings-toggle:hover{ border-color:var(--maroon); color:var(--maroon-deep); }
+  .settings-toggle:hover{ border-color:#8C8C8C; color:#3A3A3A; background:#E8E8E8; }
   .settings-panel{ margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:900px){ .settings-panel{ grid-template-columns:1fr; } }
   .card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px; }
@@ -325,6 +326,7 @@
         <div class="monthlabel" id="monthLabel"></div>
         <button class="round" id="nextMonth">›</button>
         <button class="pillbtn auto" id="autoGenBtn" style="display:none;">↻ Generar planificación automática</button>
+        <button class="pillbtn clearsel" id="clearSelBtn" style="display:none;">🗑️ Borrar selección actual</button>
         <button class="pillbtn request" id="reqChangeBtn">✎ Solicitar cambio</button>
         <button class="export-btn" id="exportBtn">↓ Exportar CSV</button>
       </div>
@@ -434,7 +436,12 @@
       <div class="card" style="grid-column:1 / -1;">
         <h3>Etiquetas de códigos</h3>
         <div id="legendEdit"></div>
-        <div class="help">Ajusta el texto si no coincide con el criterio real de tu servicio.</div>
+        <div class="addpair">
+          <input type="text" id="newLegendCode" placeholder="Código (ej. FC)" maxlength="4" style="max-width:110px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;text-transform:uppercase;">
+          <input type="text" id="newLegendLabel" placeholder="Significado (ej. Formación Continuada)" style="flex:1;min-width:160px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;">
+          <button id="addLegendBtn">Añadir etiqueta</button>
+        </div>
+        <div class="help">Ajusta el texto si no coincide con el criterio real de tu servicio, o añade/elimina etiquetas propias. Eliminar una etiqueta no borra los días ya marcados con ese código.</div>
       </div>
     </div>
 
@@ -503,7 +510,8 @@
 (function(){
 
   var CODES = ['', 'T', 'V', 'P', 'IM', 'B', 'C'];
-  var VALID_CODES = ['T','V','P','IM','B','C'];
+  var BUILTIN_CODES = ['T','V','P','IM','B','C'];
+  function currentCodes(){ return Object.keys(state.config.legend||{}); }
   var WD = ['D','L','M','X','J','V.','S'];
   var WEEKDAY_LABEL = {1:'L',2:'M',3:'X',4:'J',5:'V'};
   var WEEKDAY_SHORT = {1:'Lun',2:'Mar',3:'Mié',4:'Jue',5:'Vie'};
@@ -512,7 +520,8 @@
   var ICON = {};
   var AUTO_FROM = { y:2026, m:10 }; // Noviembre 2026 (0-indexed month)
   var EVENT_KEYS = ['inicio', 'formacion', 'reunion'];
-  var EVENT_LABELS = { inicio:'Inicio', formacion:'Formación de Enfermería', reunion:'Reunión' };
+  var EVENT_LABELS = { inicio:'Inicio', formacion:'Formación Continuada', reunion:'Reunión' };
+  var NAMEABLE_EVENTS = ['inicio', 'formacion'];
   var EVENT_ROW_LABEL = { inicio:'INICIO', formacion:'FC', reunion:'REUNIÓN' };
 
   // Migración de nombres del equipo de Coordinadores (nombre completo antiguo -> nuevo)
@@ -547,7 +556,12 @@
           {person:'Natalia Porrero', startDate: todayISODate()}
         ],
         auto:null,
-        autoAdaptive:true
+        autoAdaptive:true,
+        maxWeekly:{},
+        maxMonthly:{
+          'Javier Alfonso':6, 'Soraya Lola':6, 'Eva Mena':6, 'Sergio Sánchez':6,
+          'Mireia Bañuls':6, 'Natalia Porrero':6, 'Verónica Aguilar':6
+        }
       },
       gestion: {
         name:'Gestión',
@@ -558,7 +572,8 @@
           ['Domínguez Parrilla, Lidia','Millán Carneros, Javier'],
           ['Tatis Beltre, Elisa','Agudo López, Patricia']
         ],
-        auto:{ type:'alternating-week', weekARefStart:'2025-12-01', weekADays:[1,3,5], weekBDays:[2,4] }
+        auto:{ type:'alternating-week', weekARefStart:'2025-12-01', weekADays:[1,3,5], weekBDays:[2,4] },
+        maxWeekly:{}, maxMonthly:{}
       },
       datas: {
         name:'Data Entry',
@@ -566,6 +581,7 @@
         excludedFromMin:[],
         minPresencial:1, minPresencialInicio:0,
         incompatible:[],
+        maxWeekly:{}, maxMonthly:{},
         auto:{ type:'per-person', rules:[
           {person:'López González, Miriam', mode:'fixed', days:[1,2]},
           {person:'Muñoz Marañón, Olga', mode:'fixed', days:[1,3,5]},
@@ -583,7 +599,7 @@
     mode: 'view',
     schedAll: {},
     monthEvents: {},
-    trialNames: {},
+    eventNames: {},
     currentAlerts: []
   };
 
@@ -663,6 +679,8 @@
     state.config.teams && Object.keys(state.config.teams).forEach(function(tid){
       var tm = state.config.teams[tid];
       if(!tm.excludedFromMin) tm.excludedFromMin = [];
+      if(!tm.maxWeekly) tm.maxWeekly = {};
+      if(!tm.maxMonthly) tm.maxMonthly = {};
     });
   }
   async function saveConfig(){
@@ -763,23 +781,35 @@
     }catch(e){ showToast('Error al guardar', true); }
   }
 
+  // Formato guardado en 'trials:<mes>': { day: { inicio:'nombre', formacion:'nombre' } }.
+  // Los meses guardados antes de que existiera FC tienen { day: 'nombre' } (solo INICIO,
+  // como texto suelto) — se migra en la lectura sin tocar lo ya guardado.
+  function normalizeEventNamesForDay(v){
+    if(typeof v === 'string') return v ? { inicio: v } : {};
+    if(v && typeof v === 'object') return v;
+    return {};
+  }
   async function loadTrialNames(){
     try{
       var res = await window.storage.get('trials:'+monthKey(state.year,state.month), true);
-      state.trialNames = JSON.parse(res.value) || {};
+      var raw = JSON.parse(res.value) || {};
+      var norm = {};
+      Object.keys(raw).forEach(function(d){ norm[d] = normalizeEventNamesForDay(raw[d]); });
+      state.eventNames = norm;
     }catch(e){
-      state.trialNames = {};
+      state.eventNames = {};
     }
   }
   async function saveTrialNames(){
-    try{ await window.storage.set('trials:'+monthKey(state.year,state.month), JSON.stringify(state.trialNames), true); }
-    catch(e){ showToast('Error al guardar el nombre del ensayo', true); }
+    try{ await window.storage.set('trials:'+monthKey(state.year,state.month), JSON.stringify(state.eventNames), true); }
+    catch(e){ showToast('Error al guardar el nombre', true); }
   }
   // Etiqueta a mostrar para un evento en un día concreto: añade " – NOMBRE" cuando es
-  // un INICIO con ensayo clínico asociado.
+  // un INICIO o una Formación Continuada con nombre asociado.
   function eventLabelWithTrial(evKey, day){
-    if(evKey==='inicio' && state.trialNames && state.trialNames[day]){
-      return EVENT_LABELS.inicio + ' – ' + state.trialNames[day];
+    var names = state.eventNames && state.eventNames[day];
+    if(NAMEABLE_EVENTS.indexOf(evKey)>=0 && names && names[evKey]){
+      return EVENT_LABELS[evKey] + ' – ' + names[evKey];
     }
     return EVENT_LABELS[evKey];
   }
@@ -962,16 +992,23 @@
 
   /* ---------- Auto-generation ---------- */
 
+  // ¿Puede esta persona recibir un "T" más este día sin superar su máximo semanal o
+  // mensual configurado (tm.maxWeekly / tm.maxMonthly, por persona; sin límite si no
+  // están configurados)? monthCount/weeklyCount son los contadores del propio relleno.
+  function underCaps(tm, person, monthCount, weeklyCount){
+    var monCap = (tm.maxMonthly && tm.maxMonthly[person]) || Infinity;
+    var weekCap = (tm.maxWeekly && tm.maxWeekly[person]) || Infinity;
+    return (monthCount[person]||0) < monCap && (weeklyCount[person]||0) < weekCap;
+  }
+
   function fillAutoForTeam(teamId){
     var tm = state.config.teams[teamId];
     if(!tm.auto) return 0;
     var y=state.year, m=state.month, nDays=daysInMonth(y,m);
     var sd = state.schedAll[teamId];
     var filled = 0;
-    var tCountAlt = {};
-    if(tm.auto.type==='alternating-week'){
-      tm.members.forEach(function(p){ tCountAlt[p] = countCode(sd, p, 'T'); });
-    }
+    var tCountAlt = {}, monthCount = {};
+    tm.members.forEach(function(p){ tCountAlt[p] = countCode(sd, p, 'T'); monthCount[p] = tCountAlt[p]; });
     function incompatibleWithChosen(p, chosenToday){
       return (tm.incompatible||[]).some(function(pair){
         if(pair[0]===p && chosenToday.indexOf(pair[1])>=0) return true;
@@ -979,18 +1016,26 @@
         return false;
       });
     }
+    var weekMonday = null, weeklyCount = {};
     for(var d=1; d<=nDays; d++){
       if(isWeekend(y,m,d)) continue;
       var dow = new Date(y,m,d).getDay();
+      var mondayKey = mondayOf(new Date(y,m,d)).getTime();
+      if(mondayKey !== weekMonday){
+        weekMonday = mondayKey; weeklyCount = {};
+        tm.members.forEach(function(p){ weeklyCount[p]=0; });
+      }
       if(tm.auto.type==='alternating-week'){
         var wt = computeWeekType(tm.auto,y,m,d);
         var days = wt==='A' ? tm.auto.weekADays : tm.auto.weekBDays;
         if(days.indexOf(dow)>=0){
           // Todo el equipo debería teletrabajar este día, pero nunca los dos de una
-          // pareja incompatible a la vez: prioriza a quien lleve menos T este mes, y si
-          // eso deja fuera al compañero incompatible, ese se queda presencial hoy.
+          // pareja incompatible a la vez, ni superando el máximo semanal/mensual de
+          // nadie: prioriza a quien lleve menos T este mes entre quienes aún puedan.
           var chosenToday = tm.members.filter(function(p){ return (sd.schedule[p]||{})[d]==='T'; });
-          var candidates = tm.members.filter(function(p){ return !(sd.schedule[p]||{})[d]; });
+          var candidates = tm.members.filter(function(p){
+            return !(sd.schedule[p]||{})[d] && underCaps(tm, p, monthCount, weeklyCount);
+          });
           candidates.sort(function(a,b){ return (tCountAlt[a]||0)-(tCountAlt[b]||0); });
           candidates.forEach(function(person){
             if(incompatibleWithChosen(person, chosenToday)) return;
@@ -998,14 +1043,19 @@
             sd.schedule[person][d]='T'; filled++;
             chosenToday.push(person);
             tCountAlt[person] = (tCountAlt[person]||0)+1;
+            monthCount[person] = (monthCount[person]||0)+1;
+            weeklyCount[person] = (weeklyCount[person]||0)+1;
           });
         }
       } else if(tm.auto.type==='per-person'){
         tm.auto.rules.forEach(function(rule){
           var rdays = personAutoDays(rule, y, m, d);
-          if(rdays.indexOf(dow)>=0){
-            sd.schedule[rule.person] = sd.schedule[rule.person] || {};
-            if(!sd.schedule[rule.person][d]){ sd.schedule[rule.person][d]='T'; filled++; }
+          sd.schedule[rule.person] = sd.schedule[rule.person] || {};
+          if(rdays.indexOf(dow)>=0 && !sd.schedule[rule.person][d]){
+            if(!underCaps(tm, rule.person, monthCount, weeklyCount)) return;
+            sd.schedule[rule.person][d]='T'; filled++;
+            monthCount[rule.person] = (monthCount[rule.person]||0)+1;
+            weeklyCount[rule.person] = (weeklyCount[rule.person]||0)+1;
           }
         });
       }
@@ -1026,8 +1076,8 @@
     var counted = countableMembers(tm);
     var filled = 0;
 
-    var tCount = {};
-    counted.forEach(function(p){ tCount[p] = countCode(sd, p, 'T'); });
+    var tCount = {}, monthCount = {};
+    counted.forEach(function(p){ tCount[p] = countCode(sd, p, 'T'); monthCount[p] = tCount[p]; });
 
     var prevY = m===0 ? y-1 : y, prevM = m===0 ? 11 : m-1;
     try{
@@ -1044,9 +1094,15 @@
       });
     }
 
+    var weekMonday = null, weeklyCount = {};
     for(var d=1; d<=nDays; d++){
       if(isWeekend(y,m,d)) continue;
       var dow = new Date(y,m,d).getDay();
+      var mondayKey = mondayOf(new Date(y,m,d)).getTime();
+      if(mondayKey !== weekMonday){
+        weekMonday = mondayKey; weeklyCount = {};
+        counted.forEach(function(p){ weeklyCount[p]=0; });
+      }
       var dayEvts = state.monthEvents[d] || [];
       var isInicioDay = dayEvts.indexOf('inicio')>=0;
       var effectiveMin = (isInicioDay && tm.minPresencialInicio>0) ? tm.minPresencialInicio : tm.minPresencial;
@@ -1061,7 +1117,7 @@
       if(budget<=0) continue;
 
       var remaining = counted.filter(function(p){
-        return !alreadySet[p] && !isInNewHireWindow(tm, p, y, m, d);
+        return !alreadySet[p] && !isInNewHireWindow(tm, p, y, m, d) && underCaps(tm, p, monthCount, weeklyCount);
       });
       if(!remaining.length) continue;
 
@@ -1093,6 +1149,8 @@
         sd.schedule[p] = sd.schedule[p] || {};
         sd.schedule[p][d] = 'T';
         tCount[p] = (tCount[p]||0) + 1;
+        monthCount[p] = (monthCount[p]||0) + 1;
+        weeklyCount[p] = (weeklyCount[p]||0) + 1;
         filled++;
       });
     }
@@ -1100,10 +1158,38 @@
     return filled;
   }
 
+  // Borra solo las "T" generadas/puestas del equipo+mes actual (deja intactos V/P/B/IM/C,
+  // que representan vacaciones/permisos/bajas reales, no algo que el generador deba tocar).
+  function clearAutoManagedT(teamId){
+    var tm = state.config.teams[teamId];
+    var sd = state.schedAll[teamId];
+    tm.members.forEach(function(p){
+      if(!sd.schedule[p]) return;
+      Object.keys(sd.schedule[p]).forEach(function(d){
+        if(sd.schedule[p][d]==='T') delete sd.schedule[p][d];
+      });
+    });
+  }
+
   async function runAutoGenerate(){
+    // Regenera desde cero: borra primero las T ya puestas (propias del generador) para
+    // que el cálculo no arrastre ninguna asignación anterior, y vuelve a repartir con
+    // las reglas, incompatibilidades y límites configurados ahora mismo.
+    clearAutoManagedT(state.team);
     var filled = team().autoAdaptive ? await fillAdaptiveCoord(state.team) : fillAutoForTeam(state.team);
     await saveSched(state.team);
-    showToast('Planificación generada: '+filled+' días rellenados');
+    showToast('Planificación regenerada desde cero: '+filled+' días de teletrabajo asignados');
+    renderAll();
+  }
+
+  async function clearCurrentSelection(){
+    if(!confirm('¿Seguro que quieres borrar la selección actual? Esto elimina todo el horario de «'+team().name+'» para '+MONTH_NAMES[state.month]+' '+state.year+' (incluidas vacaciones, permisos y bajas). Esta acción no se puede deshacer.')) return;
+    var sd = sched();
+    sd.schedule = {};
+    sd.exceptions = [];
+    await saveSched(state.team);
+    state.currentAlerts = computeAlerts(state.team);
+    showToast('Selección actual borrada');
     renderAll();
   }
 
@@ -1148,12 +1234,12 @@
   function renderLegend(){
     var el = document.getElementById('legend');
     el.innerHTML = '';
-    var order = ['T','V','P','IM','B','C'];
-    order.forEach(function(c){
+    currentCodes().forEach(function(c){
       var item = document.createElement('div');
       item.className = 'item';
       var icon = ICON[c] ? ICON[c]+' ' : '';
-      item.innerHTML = '<span class="dot" style="background:'+LEGEND_COLOR[c]+'"></span><b>'+icon+c+'</b> · '+state.config.legend[c].label;
+      var dotColor = LEGEND_COLOR[c] || '#B3B3B3';
+      item.innerHTML = '<span class="dot" style="background:'+dotColor+'"></span><b>'+icon+c+'</b> · '+escapeHtml(state.config.legend[c].label);
       el.appendChild(item);
     });
     var blank = document.createElement('div');
@@ -1222,6 +1308,13 @@
       btn.onclick = runAutoGenerate;
     } else {
       btn.style.display = 'none';
+    }
+    var clearBtn = document.getElementById('clearSelBtn');
+    if(state.mode==='edit'){
+      clearBtn.style.display = 'inline-flex';
+      clearBtn.onclick = clearCurrentSelection;
+    } else {
+      clearBtn.style.display = 'none';
     }
   }
 
@@ -1300,14 +1393,19 @@
         var evts4 = evtsOf(d);
         var evtLabel4 = evts4.map(function(e){return eventLabelWithTrial(e, d);}).join(', ');
         var display = code ? (ICON[code] || code) : (weekend ? '' : '🏢');
+        var customStyle = (code && BUILTIN_CODES.indexOf(code)<0) ? ' style="background:#DCDCDC;color:#333;font-weight:700;"' : '';
         html += '<td class="daycell'+(code?' '+code:' empty'+(weekend?'':' blank'))+(weekend?' weekend':'')+(editable?' editable':'')+(today?' todaycol':'')+(conflict?' conflict':'')+(exok?' exok':'')+(evts4.length&&!weekend?' dayevent-col':'')+'"'
+              + customStyle
               + ' data-person="'+encAttr(person)+'" data-day="'+d+'"'
               + ' title="'+escapeHtml((code? (state.config.legend[code]?state.config.legend[code].label:code) : (weekend?'Fin de semana':'Presencial'))+(conflict?' · incidencia sin resolver':'')+(exok?' · excepción aprobada':'')+(evtLabel4?' · '+evtLabel4:''))+'"'
               + '>'+display+'</td>';
       }
       var twCount = countCode(sd, person, 'T');
       var vacCount = countCode(sd, person, 'V');
-      html += '<td class="totalcell">'+twCount+'</td><td class="totalcell">'+vacCount+'</td></tr>';
+      var monCap = (tm.maxMonthly && tm.maxMonthly[person]) || 0;
+      var twDisplay = monCap ? (twCount+'/'+monCap) : twCount;
+      var twTitle = monCap ? ' title="'+twCount+' de '+monCap+' teletrabajos usados este mes · quedan '+Math.max(0,monCap-twCount)+'"' : '';
+      html += '<td class="totalcell"'+twTitle+'>'+twDisplay+'</td><td class="totalcell">'+vacCount+'</td></tr>';
     });
 
     html += '<tr class="onsite-row"><td class="namecell" style="color:#fff;">En centro</td>';
@@ -1339,11 +1437,16 @@
         if(idx>=0){
           list.splice(idx,1);
         } else {
-          if(evKey==='inicio'){
-            var trial = prompt('Nombre del ensayo clínico para este día de INICIO:', state.trialNames[day]||'');
-            if(trial===null) return; // cancelado: no se activa el INICIO
-            trial = trial.trim();
-            if(trial){ state.trialNames[day] = trial; } else { delete state.trialNames[day]; }
+          if(NAMEABLE_EVENTS.indexOf(evKey)>=0){
+            var promptText = evKey==='inicio'
+              ? 'Nombre del ensayo clínico para este día de INICIO:'
+              : 'Nombre de la formación/actividad para este día de Formación Continuada:';
+            var current = (state.eventNames[day] && state.eventNames[day][evKey]) || '';
+            var val = prompt(promptText, current);
+            if(val===null) return; // cancelado: no se activa el evento
+            val = val.trim();
+            state.eventNames[day] = state.eventNames[day] || {};
+            if(val){ state.eventNames[day][evKey] = val; } else { delete state.eventNames[day][evKey]; }
             await saveTrialNames();
           }
           list.push(evKey);
@@ -1377,8 +1480,8 @@
         function commit(){
           if(committed) return; committed = true;
           var val = inp.value.trim().toUpperCase();
-          if(val!=='' && VALID_CODES.indexOf(val)<0){
-            showToast('Código no válido. Usa T, V, P, IM, B o C.', true);
+          if(val!=='' && currentCodes().indexOf(val)<0){
+            showToast('Código no válido. Usa uno de: '+currentCodes().join(', ')+'.', true);
             td.innerHTML = originalHTML;
             return;
           }
@@ -1590,6 +1693,8 @@
     tm.incompatible = (tm.incompatible||[]).filter(function(pr){return pr[0]!==person && pr[1]!==person;});
     tm.excludedFromMin = (tm.excludedFromMin||[]).filter(function(p){return p!==person;});
     tm.newHireRestrictions = (tm.newHireRestrictions||[]).filter(function(r){return r.person!==person;});
+    if(tm.maxWeekly) delete tm.maxWeekly[person];
+    if(tm.maxMonthly) delete tm.maxMonthly[person];
     if(tm.auto && tm.auto.type==='per-person'){ tm.auto.rules = tm.auto.rules.filter(function(r){return r.person!==person;}); }
     delete sched().schedule[person];
   }
@@ -1599,6 +1704,8 @@
     (tm.excludedFromMin||[]).forEach(function(p,idx,arr){ if(p===oldName) arr[idx]=newName; });
     (tm.incompatible||[]).forEach(function(pr){ if(pr[0]===oldName) pr[0]=newName; if(pr[1]===oldName) pr[1]=newName; });
     (tm.newHireRestrictions||[]).forEach(function(r){ if(r.person===oldName) r.person=newName; });
+    if(tm.maxWeekly && tm.maxWeekly[oldName]!==undefined){ tm.maxWeekly[newName]=tm.maxWeekly[oldName]; delete tm.maxWeekly[oldName]; }
+    if(tm.maxMonthly && tm.maxMonthly[oldName]!==undefined){ tm.maxMonthly[newName]=tm.maxMonthly[oldName]; delete tm.maxMonthly[oldName]; }
     if(tm.auto && tm.auto.type==='per-person'){ tm.auto.rules.forEach(function(r){ if(r.person===oldName) r.person=newName; }); }
     var sd = sched();
     if(sd.schedule[oldName]){ sd.schedule[newName] = sd.schedule[oldName]; delete sd.schedule[oldName]; }
@@ -1607,6 +1714,8 @@
     removeMemberFromTeam(tm, person);
     var target = state.config.teams[targetTid];
     target.excludedFromMin = target.excludedFromMin || [];
+    target.maxWeekly = target.maxWeekly || {};
+    target.maxMonthly = target.maxMonthly || {};
     if(target.members.indexOf(person)<0) target.members.push(person);
   }
 
@@ -1630,6 +1739,7 @@
         +   '<label><input type="checkbox" data-person="'+encAttr(person)+'" class="exclchk" '+(excludedChecked?'checked':'')+'> excluir de mínimos</label>'
         +   '<button type="button" class="mact rename" title="Renombrar">✎</button>'
         +   '<button type="button" class="mact incompat" title="Gestionar incompatibilidades">⚠</button>'
+        +   '<button type="button" class="mact limits" title="Máximo de teletrabajo semanal/mensual">⏱</button>'
         +   '<select class="mteamsel" title="Mover a otro equipo">'+teamOptions+'</select>'
         + '</span>';
       var delBtn = document.createElement('button');
@@ -1653,6 +1763,18 @@
             return '<label><input type="checkbox" class="incompatchk" data-other="'+encAttr(p)+'" '+(isIncompat?'checked':'')+'> '+escapeHtml(p)+'</label>';
           }).join('') : '<div class="muted">No hay más personas en este equipo.</div>');
       wrap.appendChild(incompatPanel);
+
+      var limitsPanel = document.createElement('div');
+      limitsPanel.className = 'member-incompat-panel';
+      limitsPanel.style.display = 'none';
+      var curWeekly = (tm.maxWeekly && tm.maxWeekly[person]) || '';
+      var curMonthly = (tm.maxMonthly && tm.maxMonthly[person]) || '';
+      limitsPanel.innerHTML = '<div class="help">'+escapeHtml(person)+' — máximo de teletrabajo (vacío = sin límite):</div>'
+        + '<div class="pwchange-row">'
+        +   '<div class="field"><label>Por semana</label><input type="number" min="0" class="maxweekly" value="'+curWeekly+'"></div>'
+        +   '<div class="field"><label>Por mes</label><input type="number" min="0" class="maxmonthly" value="'+curMonthly+'"></div>'
+        + '</div>';
+      wrap.appendChild(limitsPanel);
       ml.appendChild(wrap);
 
       row.querySelector('.rename').onclick = async function(){
@@ -1667,6 +1789,22 @@
       };
       row.querySelector('.incompat').onclick = function(){
         incompatPanel.style.display = incompatPanel.style.display==='none' ? 'block' : 'none';
+      };
+      row.querySelector('.limits').onclick = function(){
+        limitsPanel.style.display = limitsPanel.style.display==='none' ? 'block' : 'none';
+      };
+      limitsPanel.querySelector('.maxweekly').onchange = async function(){
+        var v = parseInt(this.value)||0;
+        tm.maxWeekly = tm.maxWeekly || {};
+        if(v>0){ tm.maxWeekly[person] = v; } else { delete tm.maxWeekly[person]; }
+        await saveConfig();
+      };
+      limitsPanel.querySelector('.maxmonthly').onchange = async function(){
+        var v = parseInt(this.value)||0;
+        tm.maxMonthly = tm.maxMonthly || {};
+        if(v>0){ tm.maxMonthly[person] = v; } else { delete tm.maxMonthly[person]; }
+        await saveConfig();
+        renderTable();
       };
       incompatPanel.querySelectorAll('.incompatchk').forEach(function(chk){
         chk.onchange = async function(){
@@ -1837,14 +1975,38 @@
     Object.keys(state.config.legend).forEach(function(code){
       var row = document.createElement('div');
       row.className = 'legend-edit-row';
-      row.innerHTML = '<span class="dot" style="background:'+LEGEND_COLOR[code]+'"></span><code>'+code+'</code>';
+      row.innerHTML = '<span class="dot" style="background:'+(LEGEND_COLOR[code]||'#B3B3B3')+'"></span><code>'+escapeHtml(code)+'</code>';
       var input = document.createElement('input');
       input.type = 'text'; input.value = state.config.legend[code].label;
       input.oninput = function(){ state.config.legend[code].label = input.value; renderLegend(); };
       input.onblur = saveConfig;
       row.appendChild(input);
+      var delBtn = document.createElement('button');
+      delBtn.textContent = '×'; delBtn.title = 'Eliminar etiqueta';
+      delBtn.style.cssText = 'border:none;background:none;color:var(--warn);cursor:pointer;font-size:15px;line-height:1;padding:2px 6px;';
+      delBtn.onclick = async function(){
+        if(!confirm('¿Eliminar la etiqueta "'+code+'" ('+state.config.legend[code].label+')? Los días ya marcados con este código no se borran, pero ya no se podrá volver a usar este código.')) return;
+        delete state.config.legend[code];
+        await saveConfig();
+        renderLegend(); renderSettings();
+      };
+      row.appendChild(delBtn);
       le.appendChild(row);
     });
+
+    document.getElementById('addLegendBtn').onclick = async function(){
+      var codeInput = document.getElementById('newLegendCode');
+      var labelInput = document.getElementById('newLegendLabel');
+      var code = codeInput.value.trim().toUpperCase();
+      var label = labelInput.value.trim();
+      if(!code){ showToast('Indica un código', true); return; }
+      if(!label){ showToast('Indica el significado de la etiqueta', true); return; }
+      if(state.config.legend[code]){ showToast('Ese código ya existe', true); return; }
+      state.config.legend[code] = { label: label };
+      await saveConfig();
+      codeInput.value=''; labelInput.value='';
+      renderLegend(); renderSettings();
+    };
   }
 
   function refreshAfterAutoEdit(){
@@ -1894,6 +2056,7 @@
       document.getElementById('eventsBanner').style.display = 'none';
       document.getElementById('pendingReminder').style.display = 'none';
       document.getElementById('autoGenBtn').style.display = 'none';
+      document.getElementById('clearSelBtn').style.display = 'none';
       document.getElementById('alertsPanel').style.display = 'none';
       document.getElementById('requestsPanel').style.display = 'none';
       renderSummary();
@@ -2025,7 +2188,7 @@
     document.getElementById('reqColleague').innerHTML = memberOpts;
     var cSel = document.getElementById('reqCode');
     var opts = '<option value="">Presencial (quitar código)</option>';
-    VALID_CODES.forEach(function(c){ opts += '<option value="'+c+'">'+c+' · '+escapeHtml(state.config.legend[c].label)+'</option>'; });
+    currentCodes().forEach(function(c){ opts += '<option value="'+c+'">'+c+' · '+escapeHtml(state.config.legend[c].label)+'</option>'; });
     cSel.innerHTML = opts;
     var dOpts = dayOptionsHtml();
     document.getElementById('reqDay').innerHTML = dOpts;

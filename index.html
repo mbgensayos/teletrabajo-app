@@ -257,9 +257,36 @@
   .footnote{ font-size:11px; color:var(--ink-soft); margin-top:26px; text-align:center; line-height:1.6; }
 
   @media print{ .no-print{ display:none !important; } body{ background:#fff; padding:0; } .tablewrap{ border:1px solid #000; } }
+
+  .access-gate{ position:fixed; inset:0; background:var(--linen); z-index:999; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .access-card{ background:var(--panel); border:1.5px solid var(--maroon-deep); border-radius:var(--radius); padding:28px 26px; max-width:320px; width:100%; text-align:center; box-shadow:0 4px 20px rgba(32,73,93,.15); }
+  .access-icon{ font-size:34px; margin-bottom:8px; }
+  .access-card h2{ font-family:'Space Grotesk', sans-serif; font-size:17px; color:var(--maroon-deep); margin:0 0 4px; }
+  .access-sub{ font-size:12px; color:var(--ink-soft); margin:0 0 18px; }
+  .access-card .field{ text-align:left; margin-bottom:12px; }
+  .access-error{ color:var(--warn); font-size:12px; margin-bottom:10px; }
+  .access-btn{ width:100%; font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:13px; padding:10px; border-radius:8px; border:1.5px solid var(--maroon); background:var(--maroon); color:#fff; cursor:pointer; }
+  .access-btn:hover{ background:var(--maroon-deep); }
 </style>
 </head>
 <body>
+<div id="accessGate" class="access-gate">
+  <div class="access-card">
+    <div class="access-icon" aria-hidden="true">🩸</div>
+    <h2>Teletrabajo · Hematología</h2>
+    <p class="access-sub">Acceso restringido — introduce usuario y PIN</p>
+    <div class="field">
+      <label>Usuario</label>
+      <input type="text" id="accessUser" autocomplete="username" placeholder="Usuario">
+    </div>
+    <div class="field">
+      <label>PIN</label>
+      <input type="password" id="accessPin" autocomplete="current-password" inputmode="numeric" placeholder="PIN">
+    </div>
+    <div id="accessError" class="access-error" style="display:none;">Usuario o PIN incorrectos.</div>
+    <button id="accessBtn" class="access-btn">Entrar</button>
+  </div>
+</div>
 <div class="wrap">
 
   <div class="masthead">
@@ -1861,7 +1888,35 @@
     renderAll();
   }
 
-  init();
+  /* ---------- Access gate ---------- */
+
+  var ACCESS_USER = 'UIH';
+  var ACCESS_PIN = '2026';
+  var ACCESS_KEY = 'teletrabajo_access_ok';
+
+  function checkAccess(){
+    var u = document.getElementById('accessUser').value.trim();
+    var p = document.getElementById('accessPin').value.trim();
+    if(u.toLowerCase() === ACCESS_USER.toLowerCase() && p === ACCESS_PIN){
+      try{ localStorage.setItem(ACCESS_KEY, '1'); }catch(e){}
+      document.getElementById('accessGate').style.display = 'none';
+      init();
+    } else {
+      document.getElementById('accessError').style.display = 'block';
+    }
+  }
+
+  var alreadyIn = false;
+  try{ alreadyIn = localStorage.getItem(ACCESS_KEY) === '1'; }catch(e){}
+
+  if(alreadyIn){
+    document.getElementById('accessGate').style.display = 'none';
+    init();
+  } else {
+    document.getElementById('accessBtn').addEventListener('click', checkAccess);
+    document.getElementById('accessPin').addEventListener('keydown', function(e){ if(e.key==='Enter') checkAccess(); });
+    document.getElementById('accessUser').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('accessPin').focus(); });
+  }
 
 })();
 </script>

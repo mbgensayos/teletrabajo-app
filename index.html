@@ -536,14 +536,8 @@
         newHireRestrictions:[
           {person:'Natalia Porrero', startDate: todayISODate()}
         ],
-        auto:{ type:'per-person', rules:[
-          {person:'Mireia Bañuls', mode:'fixed', days:[2], manualOnly:true},
-          {person:'Sergio Sánchez', mode:'rotating', refStart:'2025-12-01', cycleDays:[2,3,4,5,1]},
-          {person:'Javier Alfonso', mode:'rotating', refStart:'2025-12-01', cycleDays:[3,4,5,1,2]},
-          {person:'Soraya Lola', mode:'rotating', refStart:'2025-12-01', cycleDays:[4,5,1,2,3]},
-          {person:'Eva Mena', mode:'rotating', refStart:'2025-12-01', cycleDays:[5,1,2,3,4]},
-          {person:'Verónica Aguilar', mode:'rotating', refStart:'2025-12-01', cycleDays:[1,2,3,4,5]}
-        ]}
+        auto:null,
+        autoAdaptive:true
       },
       gestion: {
         name:'Gestión',
@@ -850,7 +844,7 @@
     }
     if(tm.auto.type==='per-person'){
       var rule = tm.auto.rules.filter(function(r){return r.person===person;})[0];
-      if(!rule || rule.manualOnly) return null;
+      if(!rule) return null;
       return personAutoDays(rule, y, m, day).indexOf(dow)>=0 ? 'T' : null;
     }
     return null;
@@ -936,7 +930,7 @@
 
   /* ---------- Auto-generation ---------- */
 
-  function fillAutoForTeam(teamId, includeManualOnly){
+  function fillAutoForTeam(teamId){
     var tm = state.config.teams[teamId];
     if(!tm.auto) return 0;
     var y=state.year, m=state.month, nDays=daysInMonth(y,m);
@@ -956,7 +950,6 @@
         }
       } else if(tm.auto.type==='per-person'){
         tm.auto.rules.forEach(function(rule){
-          if(rule.manualOnly && !includeManualOnly) return;
           var rdays = personAutoDays(rule, y, m, d);
           if(rdays.indexOf(dow)>=0){
             sd.schedule[rule.person] = sd.schedule[rule.person] || {};
@@ -968,8 +961,86 @@
     return filled;
   }
 
+  // Relleno adaptativo para Coordinadores: día a día, solo celdas vacías, respetando el
+  // mínimo de presenciales (más alto en días de INICIO), las incompatibilidades, la
+  // restricción de Natalia, con prioridad blanda para Mireia los martes (sin que acabe
+  // por delante de los demás en total de T del mes), repartiendo el resto por menor carga.
+  function fillAdaptiveCoord(teamId){
+    var tm = state.config.teams[teamId];
+    var y=state.year, m=state.month, nDays=daysInMonth(y,m);
+    var sd = state.schedAll[teamId];
+    var counted = countableMembers(tm);
+    var filled = 0;
+
+    var tCount = {};
+    counted.forEach(function(p){ tCount[p] = countCode(sd, p, 'T'); });
+
+    function incompatibleWithChosen(p, chosenToday){
+      return (tm.incompatible||[]).some(function(pair){
+        if(pair[0]===p && chosenToday.indexOf(pair[1])>=0) return true;
+        if(pair[1]===p && chosenToday.indexOf(pair[0])>=0) return true;
+        return false;
+      });
+    }
+
+    for(var d=1; d<=nDays; d++){
+      if(isWeekend(y,m,d)) continue;
+      var dow = new Date(y,m,d).getDay();
+      var dayEvts = state.monthEvents[d] || [];
+      var isInicioDay = dayEvts.indexOf('inicio')>=0;
+      var effectiveMin = (isInicioDay && tm.minPresencialInicio>0) ? tm.minPresencialInicio : tm.minPresencial;
+
+      var alreadySet = {}, currentPresencial = 0;
+      counted.forEach(function(p){
+        var c = (sd.schedule[p]||{})[d] || '';
+        if(c===''){ currentPresencial++; } else { alreadySet[p]=true; }
+      });
+
+      var budget = currentPresencial - effectiveMin;
+      if(budget<=0) continue;
+
+      var remaining = counted.filter(function(p){
+        return !alreadySet[p] && !isInNewHireWindow(tm, p, y, m, d);
+      });
+      if(!remaining.length) continue;
+
+      var chosenToday = [];
+
+      if(dow===2 && remaining.indexOf('Mireia Bañuls')>=0){
+        var others = counted.filter(function(p){ return p!=='Mireia Bañuls'; });
+        var minOthers = Math.min.apply(null, others.map(function(p){ return tCount[p]; }));
+        if(tCount['Mireia Bañuls']<=minOthers && !incompatibleWithChosen('Mireia Bañuls', chosenToday)){
+          chosenToday.push('Mireia Bañuls');
+          remaining = remaining.filter(function(p){ return p!=='Mireia Bañuls'; });
+          budget--;
+        }
+      }
+
+      while(budget>0 && remaining.length){
+        remaining.sort(function(a,b){ return tCount[a]-tCount[b]; });
+        var pick = null;
+        for(var i=0;i<remaining.length;i++){
+          if(!incompatibleWithChosen(remaining[i], chosenToday)){ pick = remaining[i]; break; }
+        }
+        if(!pick) break;
+        chosenToday.push(pick);
+        remaining = remaining.filter(function(p){ return p!==pick; });
+        budget--;
+      }
+
+      chosenToday.forEach(function(p){
+        sd.schedule[p] = sd.schedule[p] || {};
+        sd.schedule[p][d] = 'T';
+        tCount[p] = (tCount[p]||0) + 1;
+        filled++;
+      });
+    }
+
+    return filled;
+  }
+
   async function runAutoGenerate(){
-    var filled = fillAutoForTeam(state.team, true);
+    var filled = team().autoAdaptive ? fillAdaptiveCoord(state.team) : fillAutoForTeam(state.team);
     await saveSched(state.team);
     showToast('Planificación generada: '+filled+' días rellenados');
     renderAll();
@@ -1085,7 +1156,7 @@
   function renderAutoGenBtn(){
     var tm = team();
     var btn = document.getElementById('autoGenBtn');
-    if(tm.auto && state.mode==='edit'){
+    if((tm.auto || tm.autoAdaptive) && state.mode==='edit'){
       btn.style.display = 'inline-flex';
       btn.onclick = runAutoGenerate;
     } else {

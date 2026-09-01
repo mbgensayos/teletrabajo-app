@@ -85,6 +85,10 @@
     background:var(--panel); color:var(--maroon-deep); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
   .monthnav button.round:hover{ background:var(--pink-wash); }
   .monthlabel{ font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:15px; min-width:140px; text-align:center; }
+  .viewtoggle{ display:flex; gap:2px; background:var(--linen); border:1px solid var(--line); border-radius:999px; padding:3px; }
+  .viewpill{ font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:700; padding:5px 11px;
+    border-radius:999px; border:none; background:transparent; color:var(--ink-soft); cursor:pointer; }
+  .viewpill.active{ background:var(--maroon-deep); color:#fff; }
   .pillbtn{ font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:700; letter-spacing:.03em;
     padding:7px 13px; border-radius:999px; border:1.5px solid var(--line); background:var(--panel);
     color:var(--ink-soft); cursor:pointer; }
@@ -121,7 +125,8 @@
   thead tr.hrow1 th{ top:0; }
   thead tr.hrow2 th{ top:19px; }
   th.namehead{ left:0; top:0; z-index:5; text-align:left; padding:8px 12px; font-family:'IBM Plex Sans', sans-serif;
-    font-size:12px; min-width:200px; background:var(--maroon-deep); }
+    font-size:12px; min-width:200px; max-width:200px; background:var(--maroon-deep);
+    -webkit-transform:translateZ(0); transform:translateZ(0); }
   th.totalhead{ top:0; }
   th.daycell{ width:34px; text-align:center; border-left:1px solid rgba(255,255,255,.12); }
   th.daycell .wd{ font-size:9.5px; opacity:.7; line-height:14px; padding-top:5px; }
@@ -132,7 +137,9 @@
   tbody td{ border-bottom:1px solid var(--line); border-left:1px solid var(--line); }
   td.namecell{ position:sticky; left:0; background:var(--panel); z-index:2; padding:7px 12px;
     font-family:'IBM Plex Sans', sans-serif; font-size:12.5px; font-weight:500; white-space:nowrap;
-    border-right:1.5px solid var(--maroon-deep); display:flex; align-items:center; gap:6px; min-width:200px; }
+    overflow:hidden; text-overflow:ellipsis;
+    border-right:1.5px solid var(--maroon-deep); min-width:200px; max-width:200px;
+    -webkit-transform:translateZ(0); transform:translateZ(0); }
   td.namecell.excluded{ background:var(--pink-wash); }
   .crown{ font-size:11px; }
   td.daycell{ width:34px; height:34px; text-align:center; font-size:11px; font-weight:600; color:var(--ink-soft);
@@ -319,9 +326,11 @@
     .monthlabel{ min-width:0; font-size:13.5px; }
     .pillbtn, .export-btn{ font-size:10.5px; padding:6px 10px; }
 
-    th.namehead, td.namecell{ min-width:150px; }
+    th.namehead, td.namecell{ min-width:140px; max-width:140px; }
     th.daycell, td.daycell{ width:30px; }
-    td.totalcell{ width:42px; }
+    td.totalcell{ width:40px; }
+
+    .viewtoggle{ order:-1; }
 
     .access-card{ max-width:100%; border-radius:14px; }
     .access-card-top{ padding:26px 20px 18px; }
@@ -336,6 +345,9 @@
     .masthead h1{ font-size:16.5px; }
     .tab{ font-size:11px; padding:6px 9px; }
     .pillbtn, .export-btn{ font-size:10px; padding:5px 8px; }
+    th.namehead, td.namecell{ min-width:110px; max-width:110px; }
+    th.daycell, td.daycell{ width:28px; }
+    td.totalcell{ width:36px; }
   }
 </style>
 </head>
@@ -387,6 +399,10 @@
     <div class="controls no-print">
       <div class="tabs" id="tabs"></div>
       <div class="monthnav">
+        <div class="viewtoggle" id="viewToggle">
+          <button class="viewpill" id="viewMonthBtn">Mes</button>
+          <button class="viewpill" id="viewWeekBtn">Semana</button>
+        </div>
         <button class="round" id="prevMonth">‹</button>
         <div class="monthlabel" id="monthLabel"></div>
         <button class="round" id="nextMonth">›</button>
@@ -678,7 +694,9 @@
     schedAll: {},
     monthEvents: {},
     eventNames: {},
-    currentAlerts: []
+    currentAlerts: [],
+    viewMode: 'month',
+    weekAnchorDay: null
   };
 
   function monthKey(y,m){ return y + '-' + String(m+1).padStart(2,'0'); }
@@ -689,6 +707,27 @@
     return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
   }
   function isToday(y,m,d){ var now=new Date(); return now.getFullYear()===y && now.getMonth()===m && now.getDate()===d; }
+
+  // Días (números de día del mes en curso) que se muestran en la tabla: todo el mes en
+  // vista "month", o solo la semana natural (lunes-domingo) que contiene weekAnchorDay en
+  // vista "week" — recortada a los días que caen dentro de este mes, para no tener que
+  // cargar datos de dos meses a la vez (al cruzar de semana por el borde del mes se cambia
+  // de mes con la misma lógica que "mes siguiente/anterior").
+  function currentWeekDays(){
+    var y=state.year, m=state.month, nDays=daysInMonth(y,m);
+    if(state.viewMode!=='week'){
+      var all = []; for(var d=1; d<=nDays; d++) all.push(d);
+      return all;
+    }
+    var anchor = Math.min(Math.max(state.weekAnchorDay||1, 1), nDays);
+    var monday = mondayOf(new Date(y,m,anchor));
+    var days = [];
+    for(var i=0;i<7;i++){
+      var dt = new Date(monday); dt.setDate(monday.getDate()+i);
+      if(dt.getFullYear()===y && dt.getMonth()===m) days.push(dt.getDate());
+    }
+    return days.length ? days : [anchor];
+  }
   function escapeHtml(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
   function encAttr(s){ return encodeURIComponent(s); }
   function decAttr(s){ return decodeURIComponent(s); }
@@ -1370,7 +1409,20 @@
   }
 
   function renderMonthLabel(){
-    document.getElementById('monthLabel').textContent = MONTH_NAMES[state.month] + ' ' + state.year;
+    var el = document.getElementById('monthLabel');
+    if(state.viewMode==='week'){
+      var days = currentWeekDays();
+      var monthLabel = MONTH_NAMES[state.month].slice(0,3).toLowerCase()+'. '+state.year;
+      el.textContent = days.length ? (days[0]===days[days.length-1] ? 'Día '+days[0] : days[0]+'–'+days[days.length-1])+' '+monthLabel : MONTH_NAMES[state.month]+' '+state.year;
+    } else {
+      el.textContent = MONTH_NAMES[state.month] + ' ' + state.year;
+    }
+  }
+  function updateViewToggleUI(){
+    var mb = document.getElementById('viewMonthBtn'), wb = document.getElementById('viewWeekBtn');
+    if(!mb || !wb) return;
+    mb.classList.toggle('active', state.viewMode!=='week');
+    wb.classList.toggle('active', state.viewMode==='week');
   }
 
   function renderLegend(){
@@ -1487,9 +1539,11 @@
       if(a.type==='min'){ if(a.approved) exDays[a.day]=true; else conflictDays[a.day]=true; }
     });
 
+    var visDays = currentWeekDays();
+
     var html = '<thead><tr class="hrow1">';
     html += '<th class="namehead" rowspan="2">Nombre</th>';
-    for(var d=1; d<=nDays; d++){
+    visDays.forEach(function(d){
       var dow = new Date(y,m,d).getDay();
       var weekend = isWeekend(y,m,d);
       var evts = evtsOf(d);
@@ -1497,18 +1551,18 @@
       var evtLabel = evts.map(function(e){return eventLabelWithTrial(e, d);}).join(', ');
       var title = evts.length ? ' title="'+escapeHtml(evtLabel)+(conflictDays[d]?' · incidencia sin resolver':'')+'"' : (conflictDays[d] ? ' title="Incidencia sin resolver este día"' : (exDays[d] ? ' title="Excepción aprobada este día"' : ''));
       html += '<th class="'+cls+'"'+title+'><div class="wd">'+WD[dow]+'</div></th>';
-    }
+    });
     html += '<th class="totalhead" rowspan="2">TW</th><th class="totalhead" rowspan="2">VAC</th></tr><tr class="hrow2">';
-    for(var d2=1; d2<=nDays; d2++){
+    visDays.forEach(function(d2){
       var weekend2 = isWeekend(y,m,d2);
       var evts2 = evtsOf(d2);
       html += '<th class="daycell'+(weekend2?' weekend':'')+(evts2.length&&!weekend2?' dayevent-col':'')+'"><div class="num">'+d2+'</div></th>';
-    }
+    });
     html += '</tr></thead><tbody>';
 
     EVENT_KEYS.forEach(function(evKey){
       html += '<tr class="event-row"><td class="namecell">'+EVENT_ROW_LABEL[evKey]+'</td>';
-      for(var de=1; de<=nDays; de++){
+      visDays.forEach(function(de){
         var weekendE = isWeekend(y,m,de);
         var evts3 = evtsOf(de);
         var isSet = evts3.indexOf(evKey)>=0;
@@ -1517,14 +1571,14 @@
               + ' data-day="'+de+'" data-event="'+evKey+'"'
               + (weekendE ? '' : ' title="'+escapeHtml(eventLabelWithTrial(evKey, de))+(isSet?' · activo este día':'')+'"')
               + '>'+(weekendE?'':(isSet?'✓':'—'))+'</td>';
-      }
+      });
       html += '<td class="totalcell" style="background:transparent;"></td><td class="totalcell" style="background:transparent;"></td></tr>';
     });
 
     orderedMembers(tm).forEach(function(person){
       var isExcluded = excl.indexOf(person)>=0;
-      html += '<tr><td class="namecell'+(isExcluded?' excluded':'')+'">'+(isExcluded?'<span class="crown">★</span>':'')+escapeHtml(person)+'</td>';
-      for(var d=1; d<=nDays; d++){
+      html += '<tr><td class="namecell'+(isExcluded?' excluded':'')+'" title="'+escapeHtml(person)+'">'+(isExcluded?'<span class="crown">★</span>':'')+escapeHtml(person)+'</td>';
+      visDays.forEach(function(d){
         var weekend = isWeekend(y,m,d);
         var code = (sd.schedule[person]||{})[d] || '';
         var editable = (state.mode==='edit' && !weekend);
@@ -1541,7 +1595,7 @@
               + ' data-person="'+encAttr(person)+'" data-day="'+d+'"'
               + ' title="'+escapeHtml((code? (state.config.legend[code]?state.config.legend[code].label:code) : (weekend?'Fin de semana':'Presencial'))+(conflict?' · incidencia sin resolver':'')+(exok?' · excepción aprobada':'')+(evtLabel4?' · '+evtLabel4:''))+'"'
               + '>'+display+'</td>';
-      }
+      });
       var twCount = countCode(sd, person, 'T');
       var vacCount = countCode(sd, person, 'V');
       var monCap = (tm.maxMonthly && tm.maxMonthly[person]) || 0;
@@ -1552,13 +1606,13 @@
 
     html += '<tr class="onsite-row"><td class="namecell" style="color:#fff;">En centro</td>';
     var counted = countableMembers(tm);
-    for(var d3=1; d3<=nDays; d3++){
-      if(isWeekend(y,m,d3)){ html += '<td class="daycell weekend">·</td>'; continue; }
+    visDays.forEach(function(d3){
+      if(isWeekend(y,m,d3)){ html += '<td class="daycell weekend">·</td>'; return; }
       var used = 0;
       counted.forEach(function(p){ var c=(sd.schedule[p]||{})[d3]||''; if(c) used++; });
       var evts5 = evtsOf(d3);
       html += '<td class="daycell'+(evts5.length?' dayevent-col':'')+'">'+(counted.length-used)+'</td>';
-    }
+    });
     html += '<td class="totalcell" style="background:transparent;"></td><td class="totalcell" style="background:transparent;"></td></tr>';
 
     html += '</tbody>';
@@ -2232,6 +2286,8 @@
     var isSummary = state.team==='summary';
     document.getElementById('tablewrap').style.display = isSummary ? 'none' : 'block';
     document.getElementById('summaryWrap').style.display = isSummary ? 'block' : 'none';
+    document.getElementById('viewToggle').style.display = isSummary ? 'none' : 'flex';
+    updateViewToggleUI();
 
     if(isSummary){
       document.getElementById('noteBar').style.display = 'none';
@@ -2321,14 +2377,58 @@
     }
   };
 
+  async function goToAdjacentMonth(dir){
+    state.month += dir; if(state.month<0){ state.month=11; state.year--; } else if(state.month>11){ state.month=0; state.year++; }
+    await loadAllSchedules(); await loadMonthEvents(); await loadTrialNames(); await maybeAutoFillOnLoad();
+  }
   document.getElementById('prevMonth').onclick = async function(){
+    if(state.viewMode==='week'){
+      var y=state.year, m=state.month, nDays=daysInMonth(y,m);
+      var anchor = Math.min(Math.max(state.weekAnchorDay||1, 1), nDays);
+      var monday = mondayOf(new Date(y,m,anchor));
+      var prevMonday = new Date(monday); prevMonday.setDate(monday.getDate()-7);
+      if(prevMonday.getFullYear()===y && prevMonday.getMonth()===m){
+        state.weekAnchorDay = prevMonday.getDate();
+      } else {
+        await goToAdjacentMonth(-1);
+        state.weekAnchorDay = daysInMonth(state.year, state.month);
+      }
+      renderAll();
+      return;
+    }
     state.month--; if(state.month<0){ state.month=11; state.year--; }
     await loadAllSchedules(); await loadMonthEvents(); await loadTrialNames(); await maybeAutoFillOnLoad(); renderAll();
   };
   document.getElementById('nextMonth').onclick = async function(){
+    if(state.viewMode==='week'){
+      var y2=state.year, m2=state.month, nDays2=daysInMonth(y2,m2);
+      var anchor2 = Math.min(Math.max(state.weekAnchorDay||1, 1), nDays2);
+      var monday2 = mondayOf(new Date(y2,m2,anchor2));
+      var nextMonday = new Date(monday2); nextMonday.setDate(monday2.getDate()+7);
+      if(nextMonday.getFullYear()===y2 && nextMonday.getMonth()===m2){
+        state.weekAnchorDay = nextMonday.getDate();
+      } else {
+        await goToAdjacentMonth(1);
+        state.weekAnchorDay = 1;
+      }
+      renderAll();
+      return;
+    }
     state.month++; if(state.month>11){ state.month=0; state.year++; }
     await loadAllSchedules(); await loadMonthEvents(); await loadTrialNames(); await maybeAutoFillOnLoad(); renderAll();
   };
+
+  function setViewMode(mode){
+    if(state.viewMode===mode) return;
+    state.viewMode = mode;
+    if(mode==='week' && !state.weekAnchorDay){
+      var today = new Date();
+      state.weekAnchorDay = (today.getFullYear()===state.year && today.getMonth()===state.month) ? today.getDate() : 1;
+    }
+    renderAll();
+  }
+  document.getElementById('viewMonthBtn').onclick = function(){ setViewMode('month'); };
+  document.getElementById('viewWeekBtn').onclick = function(){ setViewMode('week'); };
 
   document.getElementById('settingsToggle').onclick = function(){
     var p = document.getElementById('settingsPanel');

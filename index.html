@@ -537,7 +537,12 @@
           {person:'Natalia Porrero', startDate: todayISODate()}
         ],
         auto:{ type:'per-person', rules:[
-          {person:'Mireia Bañuls', mode:'fixed', days:[2]}
+          {person:'Mireia Bañuls', mode:'rotating', refStart:'2025-12-01', cycleDays:[1,2,3,4,5]},
+          {person:'Sergio Sánchez', mode:'rotating', refStart:'2025-12-01', cycleDays:[2,3,4,5,1]},
+          {person:'Javier Alfonso', mode:'rotating', refStart:'2025-12-01', cycleDays:[3,4,5,1,2]},
+          {person:'Soraya Lola', mode:'rotating', refStart:'2025-12-01', cycleDays:[4,5,1,2,3]},
+          {person:'Eva Mena', mode:'rotating', refStart:'2025-12-01', cycleDays:[5,1,2,3,4]},
+          {person:'Verónica Aguilar', mode:'rotating', refStart:'2025-12-01', cycleDays:[1,2,3,4,5]}
         ]}
       },
       gestion: {
@@ -815,6 +820,27 @@
     var mod = ((diff%2)+2)%2;
     return mod===0 ? 'M1':'M2';
   }
+  // Semana del "día" (lunes de esa semana), en número de semanas desde el lunes de refStart.
+  function weeksSince(refStart, y, m, day){
+    var refMonday = mondayOf(new Date(refStart+'T00:00:00'));
+    var targetMonday = mondayOf(new Date(y,m,day));
+    return Math.round((targetMonday - refMonday) / (7*86400000));
+  }
+  // Devuelve los días de la semana (0-6) en los que a esta persona/regla le toca "T" ese mes/día.
+  function personAutoDays(rule, y, m, day){
+    if(rule.mode==='fixed') return rule.days;
+    if(rule.mode==='alt-month'){
+      var mt = computeMonthType(rule.refStart, y, m);
+      return mt==='M1' ? rule.m1Days : rule.m2Days;
+    }
+    if(rule.mode==='rotating'){
+      // El día de la semana asignado avanza cíclicamente por rule.cycleDays cada semana natural.
+      var n = rule.cycleDays.length;
+      var idx = ((weeksSince(rule.refStart, y, m, day) % n) + n) % n;
+      return [rule.cycleDays[idx]];
+    }
+    return [];
+  }
   function expectedAutoCode(tm, person, y, m, day, dow){
     if(!tm.auto || dow===0 || dow===6) return null;
     if(tm.auto.type==='alternating-week'){
@@ -825,12 +851,7 @@
     if(tm.auto.type==='per-person'){
       var rule = tm.auto.rules.filter(function(r){return r.person===person;})[0];
       if(!rule) return null;
-      if(rule.mode==='fixed'){ return rule.days.indexOf(dow)>=0 ? 'T' : null; }
-      if(rule.mode==='alt-month'){
-        var mt = computeMonthType(rule.refStart, y, m);
-        var days = mt==='M1' ? rule.m1Days : rule.m2Days;
-        return days.indexOf(dow)>=0 ? 'T' : null;
-      }
+      return personAutoDays(rule, y, m, day).indexOf(dow)>=0 ? 'T' : null;
     }
     return null;
   }
@@ -935,9 +956,7 @@
         }
       } else if(tm.auto.type==='per-person'){
         tm.auto.rules.forEach(function(rule){
-          var rdays;
-          if(rule.mode==='fixed'){ rdays = rule.days; }
-          else { var mt = computeMonthType(rule.refStart,y,m); rdays = mt==='M1' ? rule.m1Days : rule.m2Days; }
+          var rdays = personAutoDays(rule, y, m, d);
           if(rdays.indexOf(dow)>=0){
             sd.schedule[rule.person] = sd.schedule[rule.person] || {};
             if(!sd.schedule[rule.person][d]){ sd.schedule[rule.person][d]='T'; filled++; }

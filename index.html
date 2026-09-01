@@ -525,17 +525,20 @@
     teams: {
       coord: {
         name:'Coordinadores',
-        members:['Javier Alfonso','Soraya Lola','Eva Mena','Sergio Sánchez','Mireia Bañuls','Natalia Porrero','Ana García'],
+        members:['Javier Alfonso','Soraya Lola','Eva Mena','Sergio Sánchez','Mireia Bañuls','Natalia Porrero','Ana García','Verónica Aguilar'],
         excludedFromMin:['Ana García'],
         minPresencial:3, minPresencialInicio:4,
         incompatible:[
           ['Soraya Lola','Mireia Bañuls'],
-          ['Sergio Sánchez','Javier Alfonso']
+          ['Sergio Sánchez','Javier Alfonso'],
+          ['Eva Mena','Verónica Aguilar']
         ],
         newHireRestrictions:[
           {person:'Natalia Porrero', startDate: todayISODate()}
         ],
-        auto:null
+        auto:{ type:'per-person', rules:[
+          {person:'Mireia Bañuls', mode:'fixed', days:[2]}
+        ]}
       },
       gestion: {
         name:'Gestión',
@@ -546,7 +549,7 @@
           ['Domínguez Parrilla, Lidia','Millán Carneros, Javier'],
           ['Tatis Beltre, Elisa','Agudo López, Patricia']
         ],
-        auto:null
+        auto:{ type:'alternating-week', weekARefStart:'2025-12-01', weekADays:[1,3,5], weekBDays:[2,4] }
       },
       datas: {
         name:'Data Entry',

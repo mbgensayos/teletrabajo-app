@@ -946,6 +946,12 @@
     var y=state.year, m=state.month, nDays=daysInMonth(y,m);
     var alerts = [];
     var counted = countableMembers(tm);
+    // Si todavía no se ha generado/editado ningún día de este mes para el equipo, no
+    // tiene sentido avisar de que "rompe el patrón automático": aún no hay nada que revisar.
+    var hasAnySchedule = tm.members.some(function(p){
+      var days = sd.schedule[p] || {};
+      return Object.keys(days).length > 0;
+    });
 
     for(var d=1; d<=nDays; d++){
       if(isWeekend(y,m,d)) continue;
@@ -975,7 +981,7 @@
         }
       });
 
-      if(tm.auto){
+      if(tm.auto && hasAnySchedule){
         tm.members.forEach(function(p){
           var expected = expectedAutoCode(tm, p, y, m, d, dow);
           var actual = (sd.schedule[p]||{})[d] || '';

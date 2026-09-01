@@ -143,6 +143,7 @@
   td.daycell.todaycol{ box-shadow:inset 0 0 0 2px var(--maroon-deep); }
   td.daycell.conflict{ box-shadow:inset 0 0 0 2px var(--warn); }
   td.daycell.exok{ box-shadow:inset 0 0 0 2px var(--plum); }
+  td.daycell.suggested{ box-shadow:inset 0 0 0 1.5px var(--code-t); }
   td.totalcell{ width:52px; text-align:center; font-size:12px; font-weight:600; background:var(--pink-wash); color:var(--maroon-deep); }
   tr.onsite-row td{ background:#2E5568; color:#fff; font-weight:600; font-size:11px; }
   tr.onsite-row td.namecell{ background:#2E5568; color:#fff; }
@@ -501,6 +502,8 @@
   var LEGEND_COLOR = { T:'var(--code-t)', V:'var(--code-v)', P:'var(--plum)', IM:'var(--code-im)', B:'var(--code-b)', C:'var(--teal)' };
   var ICON = {};
   var AUTO_FROM = { y:2026, m:10 }; // Noviembre 2026 (0-indexed month)
+  // Sugerencias visuales (no autorrellenan ni generan incidencias): 'equipo|persona' -> [días de semana, 1=L..5=V]
+  var SUGGESTED_DAYS = { 'coord|Mireia Bañuls': [2] };
   var EVENT_KEYS = ['inicio', 'formacion', 'reunion'];
   var EVENT_LABELS = { inicio:'Inicio', formacion:'Formación de Enfermería', reunion:'Reunión' };
   var EVENT_ROW_LABEL = { inicio:'INICIO', formacion:'FC', reunion:'REUNIÓN' };
@@ -537,7 +540,6 @@
           {person:'Natalia Porrero', startDate: todayISODate()}
         ],
         auto:{ type:'per-person', rules:[
-          {person:'Mireia Bañuls', mode:'rotating', refStart:'2025-12-01', cycleDays:[1,2,3,4,5]},
           {person:'Sergio Sánchez', mode:'rotating', refStart:'2025-12-01', cycleDays:[2,3,4,5,1]},
           {person:'Javier Alfonso', mode:'rotating', refStart:'2025-12-01', cycleDays:[3,4,5,1,2]},
           {person:'Soraya Lola', mode:'rotating', refStart:'2025-12-01', cycleDays:[4,5,1,2,3]},
@@ -1158,6 +1160,7 @@
       html += '<tr><td class="namecell'+(isExcluded?' excluded':'')+'">'+(isExcluded?'<span class="crown">★</span>':'')+escapeHtml(person)+'</td>';
       for(var d=1; d<=nDays; d++){
         var weekend = isWeekend(y,m,d);
+        var dow = new Date(y,m,d).getDay();
         var code = (sd.schedule[person]||{})[d] || '';
         var editable = (state.mode==='edit' && !weekend);
         var today = isToday(y,m,d);
@@ -1166,10 +1169,11 @@
         var exok = !conflict && exCells[key];
         var evts4 = evtsOf(d);
         var evtLabel4 = evts4.map(function(e){return EVENT_LABELS[e];}).join(', ');
+        var suggested = !code && !weekend && (SUGGESTED_DAYS[state.team+'|'+person]||[]).indexOf(dow)>=0;
         var display = code ? (ICON[code] || code) : (weekend ? '' : '🏢');
-        html += '<td class="daycell'+(code?' '+code:' empty'+(weekend?'':' blank'))+(weekend?' weekend':'')+(editable?' editable':'')+(today?' todaycol':'')+(conflict?' conflict':'')+(exok?' exok':'')+(evts4.length&&!weekend?' dayevent-col':'')+'"'
+        html += '<td class="daycell'+(code?' '+code:' empty'+(weekend?'':' blank'))+(weekend?' weekend':'')+(editable?' editable':'')+(today?' todaycol':'')+(conflict?' conflict':'')+(exok?' exok':'')+(evts4.length&&!weekend?' dayevent-col':'')+(suggested?' suggested':'')+'"'
               + ' data-person="'+encAttr(person)+'" data-day="'+d+'"'
-              + ' title="'+escapeHtml((code? (state.config.legend[code]?state.config.legend[code].label:code) : (weekend?'Fin de semana':'Presencial'))+(conflict?' · incidencia sin resolver':'')+(exok?' · excepción aprobada':'')+(evtLabel4?' · '+evtLabel4:''))+'"'
+              + ' title="'+escapeHtml((code? (state.config.legend[code]?state.config.legend[code].label:code) : (weekend?'Fin de semana':(suggested?'Sugerencia: suele teletrabajar este día (no automático)':'Presencial')))+(conflict?' · incidencia sin resolver':'')+(exok?' · excepción aprobada':'')+(evtLabel4?' · '+evtLabel4:''))+'"'
               + '>'+display+'</td>';
       }
       var twCount = countCode(sd, person, 'T');

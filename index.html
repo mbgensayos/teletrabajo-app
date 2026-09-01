@@ -2481,7 +2481,15 @@
 
   async function init(){
     await loadConfig();
-    await migrateStoredData();
+    // migrateStoredData() escanea TODA la colección (todas las plantillas de todos los meses)
+    // varias veces — es una migración histórica de un solo uso, no algo a repetir en cada carga.
+    // Se ejecuta una única vez y se marca como hecha para no volver a pagar ese coste nunca más
+    // (antes se ejecutaba en cada apertura de la app, lo que la hacía muy lenta sobre todo en móvil).
+    if(!state.config._migratedDayEvents){
+      await migrateStoredData();
+      state.config._migratedDayEvents = true;
+      await saveConfig();
+    }
     await loadAllSchedules();
     await loadMonthEvents();
     await loadTrialNames();

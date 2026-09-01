@@ -44,6 +44,8 @@
     margin-bottom:18px; border-bottom:2px solid var(--pink-pale); padding-bottom:14px; }
   .masthead .brand{ display:flex; align-items:center; gap:12px; }
   .masthead .brand img{ width:52px; height:52px; border-radius:12px; object-fit:cover; box-shadow:0 1px 4px rgba(32,73,93,.18); }
+  .masthead .brand .brand-emoji{ width:52px; height:52px; border-radius:12px; background:var(--pink-wash);
+    box-shadow:0 1px 4px rgba(32,73,93,.18); display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
   .masthead h1{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:25px; letter-spacing:-0.01em;
     color:var(--maroon-deep); margin:0 0 1px; }
   .masthead .sub{ font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em; font-weight:500; }
@@ -262,4 +264,1606 @@
 
   <div class="masthead">
     <div class="brand">
-      <img src="data:image/png;base64,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
+      <div class="brand-emoji" aria-hidden="true">🩸</div>
+      <div>
+        <h1>Teletrabajo · Hematología</h1>
+        <div class="sub">Unidad de Investigación · Hospital Gregorio Marañón</div>
+      </div>
+    </div>
+    <div class="mode-toggle no-print">
+      <div class="mode-note" id="modeNote">Modo consulta: se puede ver el calendario y pedir cambios.</div>
+      <button class="mode-pill view" id="modeBtn">Modo edición</button>
+      <div class="pw-panel" id="pwPanel"></div>
+    </div>
+  </div>
+
+  <div id="loading" style="padding:40px; text-align:center; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; font-size:13px;">Cargando calendario…</div>
+
+  <div id="app" style="display:none;">
+
+    <div class="controls no-print">
+      <div class="tabs" id="tabs"></div>
+      <div class="monthnav">
+        <button class="round" id="prevMonth">‹</button>
+        <div class="monthlabel" id="monthLabel"></div>
+        <button class="round" id="nextMonth">›</button>
+        <button class="pillbtn auto" id="autoGenBtn" style="display:none;">↻ Generar planificación automática</button>
+        <button class="pillbtn request" id="reqChangeBtn">✎ Solicitar cambio</button>
+        <button class="export-btn" id="exportBtn">↓ Exportar CSV</button>
+      </div>
+    </div>
+
+    <div class="req-panel" id="reqPanel">
+      <h4>Solicitar un cambio</h4>
+      <div class="field">
+        <label>Tipo de solicitud</label>
+        <select id="reqType">
+          <option value="change">Cambio de código (para mí)</option>
+          <option value="swap">Cambio con un compañero/a (intercambio de día)</option>
+        </select>
+      </div>
+      <div class="req-grid" id="reqFieldsChange">
+        <div><label>Persona</label><select id="reqPerson"></select></div>
+        <div><label>Día</label><select id="reqDay"></select></div>
+        <div><label>Código deseado</label><select id="reqCode"></select></div>
+      </div>
+      <div class="req-grid" id="reqFieldsSwap" style="display:none;">
+        <div><label>Persona (tú)</label><select id="reqPersonSwap"></select></div>
+        <div><label>Compañero/a</label><select id="reqColleague"></select></div>
+        <div><label>Día a intercambiar</label><select id="reqDaySwap"></select></div>
+      </div>
+      <div class="field"><label>Nota (opcional)</label><textarea id="reqNote" rows="2" placeholder="Motivo del cambio…"></textarea></div>
+      <div class="req-actions">
+        <button class="ghost" id="reqCancel">Cancelar</button>
+        <button id="reqSubmit">Enviar solicitud</button>
+      </div>
+    </div>
+
+    <div class="info-line" id="infoLine"></div>
+
+    <div class="pending-reminder no-print" id="pendingReminder" style="display:none;"></div>
+
+    <div class="notebar" id="noteBar" style="display:none;">
+      <span class="tag">Nota</span>
+      <div id="noteContent" style="width:100%;"></div>
+    </div>
+
+    <div class="events-banner" id="eventsBanner"></div>
+
+    <div class="legend" id="legend"></div>
+
+    <div class="tablewrap" id="tablewrap">
+      <table id="rosterTable"></table>
+    </div>
+
+    <div id="summaryWrap" style="display:none;"></div>
+
+    <div class="panelbox no-print" id="requestsPanel" style="display:none;"></div>
+    <div class="panelbox no-print" id="alertsPanel" style="display:none;"></div>
+
+    <button class="settings-toggle no-print" id="settingsToggle" style="display:none;">⚙ Ajustes del equipo (miembros, reglas, patrón automático, contraseña, etiquetas)</button>
+    <div class="settings-panel no-print" id="settingsPanel" style="display:none;">
+      <div class="card">
+        <h3>Equipo</h3>
+        <div id="memberList"></div>
+        <div class="addmember">
+          <input type="text" id="newMemberInput" placeholder="Apellidos, Nombre">
+          <button id="addMemberBtn">Añadir</button>
+        </div>
+        <div class="help">"Excluir de mínimos" mantiene a la persona en la tabla y el resumen, pero no cuenta para los mínimos de presencialidad (útil para responsables/jefatura).</div>
+      </div>
+      <div class="card">
+        <h3>Mínimos de presencialidad</h3>
+        <div class="field">
+          <label>Mínimo presencial normal (0 = sin mínimo)</label>
+          <input type="number" min="0" id="minPresInput">
+        </div>
+        <div class="field">
+          <label>Mínimo presencial en días marcados como INICIO (0 = no aplica)</label>
+          <input type="number" min="0" id="minPresInicioInput">
+        </div>
+      </div>
+      <div class="card">
+        <h3>Incompatibilidades de teletrabajo</h3>
+        <div id="incompatList"></div>
+        <div class="addpair">
+          <select id="incompatP1"></select>
+          <select id="incompatP2"></select>
+          <button id="addPairBtn">Añadir pareja</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Nueva incorporación (sin teletrabajo)</h3>
+        <div id="newHireList"></div>
+        <div class="addpair">
+          <select id="newHirePerson"></select>
+          <input type="date" id="newHireDate" style="flex:1;min-width:130px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;">
+          <button id="addNewHireBtn">Añadir</button>
+        </div>
+        <div class="help">Durante 6 meses desde la fecha indicada, esa persona no puede tener T y aparece como presencial salvo que tenga otra situación (V, B, P, IM, C…).</div>
+      </div>
+      <div class="card">
+        <h3>Patrón automático</h3>
+        <div id="autoEditor"></div>
+      </div>
+      <div class="card">
+        <h3>Contraseña de edición</h3>
+        <div class="pwchange-row">
+          <div class="field"><label>Actual</label><input type="password" id="pwCurrent"></div>
+          <div class="field"><label>Nueva</label><input type="password" id="pwNew"></div>
+          <button class="addmember" id="pwChangeBtn" style="border:1.5px solid var(--maroon);background:var(--maroon);color:#fff;border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;height:32px;">Cambiar</button>
+        </div>
+      </div>
+      <div class="card" style="grid-column:1 / -1;">
+        <h3>Etiquetas de códigos</h3>
+        <div id="legendEdit"></div>
+        <div class="help">Ajusta el texto si no coincide con el criterio real de tu servicio.</div>
+      </div>
+    </div>
+
+    <div class="help no-print">Clic en una celda (en modo edición) y escribe el código (T, V, P, IM, B o C) — Intro para guardar, Esc para cancelar. Fines de semana bloqueados. Las filas INICIO / FC / REUNIÓN (arriba de la tabla) marcan eventos por día — clic para activar o desactivar cada uno; pueden coincidir varios el mismo día. Sin contraseña solo se pueden ver los datos y pedir cambios con «Solicitar cambio».</div>
+  </div>
+
+  <div class="footnote">Los datos se guardan automáticamente y son visibles para cualquier persona que abra esta app. · No sustituye al registro oficial de RRHH.</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ==================================================================================
+     CONFIGURACIÓN DE FIREBASE — RELLENA ESTO ANTES DE PUBLICAR LA APP
+     Sigue la guía que te dio Claude para crear un proyecto gratuito en
+     https://console.firebase.google.com y consigue tu propio "firebaseConfig".
+     Sustituye SOLO los valores de aquí abajo (los que empiezan por "TU_...").
+     ================================================================================== -->
+<script>
+  var firebaseConfig = {
+    apiKey: "AIzaSyBcBeAtCscf87l4TYDtX6Ea_5cHZFGlybI",
+    authDomain: "teletrabajo-626b6.firebaseapp.com",
+    projectId: "teletrabajo-626b6",
+    storageBucket: "teletrabajo-626b6.firebasestorage.app",
+    messagingSenderId: "195039880021",
+    appId: "1:195039880021:web:59c628c3519b98969e45dc"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.firestore();
+  var COLLECTION = 'teletrabajo';
+
+  // Shim: reproduce exactamente la misma API que usaba window.storage dentro de Claude
+  // (get/set/list con los mismos parámetros y el mismo comportamiento), para que el
+  // resto de la aplicación funcione sin ningún otro cambio.
+  window.storage = {
+    get: function(key, shared){
+      return db.collection(COLLECTION).doc(key).get().then(function(doc){
+        if(!doc.exists) throw new Error('not found: '+key);
+        var data = doc.data();
+        return { key: key, value: data.value, shared: shared };
+      });
+    },
+    set: function(key, value, shared){
+      return db.collection(COLLECTION).doc(key).set({ value: value }).then(function(){
+        return { key: key, value: value, shared: shared };
+      });
+    },
+    delete: function(key, shared){
+      return db.collection(COLLECTION).doc(key).delete().then(function(){
+        return { key: key, deleted: true, shared: shared };
+      });
+    },
+    list: function(prefix, shared){
+      return db.collection(COLLECTION).get().then(function(snap){
+        var keys = [];
+        snap.forEach(function(doc){
+          if(!prefix || doc.id.indexOf(prefix)===0) keys.push(doc.id);
+        });
+        return { keys: keys, prefix: prefix, shared: shared };
+      });
+    }
+  };
+</script>
+
+<script>
+(function(){
+
+  var CODES = ['', 'T', 'V', 'P', 'IM', 'B', 'C'];
+  var VALID_CODES = ['T','V','P','IM','B','C'];
+  var WD = ['D','L','M','X','J','V.','S'];
+  var WEEKDAY_LABEL = {1:'L',2:'M',3:'X',4:'J',5:'V'};
+  var WEEKDAY_SHORT = {1:'Lun',2:'Mar',3:'Mié',4:'Jue',5:'Vie'};
+  var MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var LEGEND_COLOR = { T:'var(--code-t)', V:'var(--code-v)', P:'var(--plum)', IM:'var(--code-im)', B:'var(--code-b)', C:'var(--teal)' };
+  var ICON = {};
+  var AUTO_FROM = { y:2026, m:10 }; // Noviembre 2026 (0-indexed month)
+  var EVENT_KEYS = ['inicio', 'formacion', 'reunion'];
+  var EVENT_LABELS = { inicio:'Inicio', formacion:'Formación de Enfermería', reunion:'Reunión' };
+  var EVENT_ROW_LABEL = { inicio:'INICIO', formacion:'FC', reunion:'REUNIÓN' };
+
+  // Migración de nombres del equipo de Coordinadores (nombre completo antiguo -> nuevo)
+  var RENAME_MAP_COORD = {
+    'Bañuls García, Mireia': 'Mireia Bañuls',
+    'Mena Sicilia, Eva': 'Eva Mena',
+    'Oviedo Prada, Soraya Lola': 'Soraya Lola',
+    'Sánchez Cano, Sergio': 'Sergio Sánchez',
+    'Martínez Sánchez, Javier Alfonso': 'Javier Alfonso',
+    'Ana': 'Ana García'
+  };
+  var REMOVED_COORD = ['Aguilar Perea, Verónica', 'García García, Ana María', 'Manzanero Cámara, Patricia'];
+
+  var DEFAULT_CONFIG = {
+    editPassword: '',
+    legend: {
+      T:{label:'Teletrabajo'}, V:{label:'Vacaciones'}, P:{label:'Permiso'},
+      IM:{label:'Investigator Meeting'}, B:{label:'Baja'}, C:{label:'Cita médica'}
+    },
+    teams: {
+      coord: {
+        name:'Coordinadores',
+        members:['Javier Alfonso','Soraya Lola','Eva Mena','Sergio Sánchez','Mireia Bañuls','Natalia Porrero','Ana García'],
+        excludedFromMin:['Ana García'],
+        minPresencial:3, minPresencialInicio:4,
+        incompatible:[
+          ['Soraya Lola','Mireia Bañuls'],
+          ['Sergio Sánchez','Javier Alfonso']
+        ],
+        newHireRestrictions:[
+          {person:'Natalia Porrero', startDate: todayISODate()}
+        ],
+        auto:null
+      },
+      gestion: {
+        name:'Gestión',
+        members:['Agudo López, Patricia','Domínguez Parrilla, Lidia','Millán Carneros, Javier','Tatis Beltre, Elisa'],
+        excludedFromMin:[],
+        minPresencial:0, minPresencialInicio:0,
+        incompatible:[
+          ['Domínguez Parrilla, Lidia','Millán Carneros, Javier'],
+          ['Tatis Beltre, Elisa','Agudo López, Patricia']
+        ],
+        auto:null
+      },
+      datas: {
+        name:'Data Entry',
+        members:['Muñoz Marañón, Olga','López González, Miriam','Baratas Álvarez, Lucía'],
+        excludedFromMin:[],
+        minPresencial:1, minPresencialInicio:0,
+        incompatible:[],
+        auto:{ type:'per-person', rules:[
+          {person:'López González, Miriam', mode:'fixed', days:[1,2]},
+          {person:'Muñoz Marañón, Olga', mode:'fixed', days:[1,3,5]},
+          {person:'Baratas Álvarez, Lucía', mode:'fixed', days:[4,5]}
+        ]}
+      }
+    }
+  };
+
+  var state = {
+    config: null,
+    team: 'coord',
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+    mode: 'view',
+    schedAll: {},
+    monthEvents: {},
+    currentAlerts: []
+  };
+
+  function monthKey(y,m){ return y + '-' + String(m+1).padStart(2,'0'); }
+  function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
+  function isWeekend(y,m,d){ var dow = new Date(y,m,d).getDay(); return dow===0||dow===6; }
+  function todayISODate(){
+    var n = new Date();
+    return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+  }
+  function isToday(y,m,d){ var now=new Date(); return now.getFullYear()===y && now.getMonth()===m && now.getDate()===d; }
+  function escapeHtml(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+  function encAttr(s){ return encodeURIComponent(s); }
+  function decAttr(s){ return decodeURIComponent(s); }
+  function isAutoFromOrLater(y,m){ return (y>AUTO_FROM.y) || (y===AUTO_FROM.y && m>=AUTO_FROM.m); }
+
+  function showToast(msg, isError){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = isError ? 'var(--warn)' : 'var(--maroon-deep)';
+    t.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function(){ t.classList.remove('show'); }, 1700);
+  }
+
+  /* ---------- Storage ---------- */
+
+  async function loadConfig(){
+    try{
+      var res = await window.storage.get('config', true);
+      state.config = JSON.parse(res.value);
+    }catch(e){
+      state.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      try{ await window.storage.set('config', JSON.stringify(state.config), true); }catch(e2){}
+    }
+    // Migration: older versions had a separate 'jefatura' team for Ana.
+    if(state.config.teams.jefatura){
+      var jef = state.config.teams.jefatura;
+      var coordTeam = state.config.teams.coord;
+      if(coordTeam){
+        coordTeam.excludedFromMin = coordTeam.excludedFromMin || [];
+        (jef.members||[]).forEach(function(p){
+          if(coordTeam.members.indexOf(p)<0) coordTeam.members.push(p);
+          if(coordTeam.excludedFromMin.indexOf(p)<0) coordTeam.excludedFromMin.push(p);
+        });
+      }
+      delete state.config.teams.jefatura;
+      await saveConfig();
+    }
+    // Migration: rename/update Coordinadores roster to the new names (Aug 2026).
+    var coordTm = state.config.teams.coord;
+    if(coordTm){
+      var needsRename = coordTm.members.some(function(p){ return RENAME_MAP_COORD.hasOwnProperty(p) || REMOVED_COORD.indexOf(p)>=0; });
+      if(needsRename){
+        var newMembers = coordTm.members
+          .filter(function(p){ return REMOVED_COORD.indexOf(p)<0; })
+          .map(function(p){ return RENAME_MAP_COORD.hasOwnProperty(p) ? RENAME_MAP_COORD[p] : p; });
+        if(newMembers.indexOf('Natalia Porrero')<0) newMembers.push('Natalia Porrero');
+        coordTm.members = newMembers;
+        coordTm.excludedFromMin = (coordTm.excludedFromMin||[])
+          .map(function(p){ return RENAME_MAP_COORD.hasOwnProperty(p) ? RENAME_MAP_COORD[p] : p; })
+          .filter(function(p){ return REMOVED_COORD.indexOf(p)<0; });
+        if(coordTm.excludedFromMin.indexOf('Ana García')<0) coordTm.excludedFromMin.push('Ana García');
+        coordTm.incompatible = (coordTm.incompatible||[])
+          .map(function(pair){ return [
+            RENAME_MAP_COORD.hasOwnProperty(pair[0]) ? RENAME_MAP_COORD[pair[0]] : pair[0],
+            RENAME_MAP_COORD.hasOwnProperty(pair[1]) ? RENAME_MAP_COORD[pair[1]] : pair[1]
+          ]; })
+          .filter(function(pair){ return newMembers.indexOf(pair[0])>=0 && newMembers.indexOf(pair[1])>=0; });
+        if(!coordTm.newHireRestrictions || !coordTm.newHireRestrictions.length){
+          coordTm.newHireRestrictions = [{person:'Natalia Porrero', startDate: todayISODate()}];
+        }
+        await saveConfig();
+      }
+    }
+    if(typeof state.config.editPassword === 'undefined') state.config.editPassword = '';
+    state.config.teams && Object.keys(state.config.teams).forEach(function(tid){
+      var tm = state.config.teams[tid];
+      if(!tm.excludedFromMin) tm.excludedFromMin = [];
+    });
+  }
+  async function saveConfig(){
+    try{ await window.storage.set('config', JSON.stringify(state.config), true); showToast('Guardado ✓'); }
+    catch(e){ showToast('Error al guardar los ajustes', true); }
+  }
+
+  // Migración de datos históricos: renombra personas dentro de los horarios guardados de
+  // Coordinadores y extrae los antiguos "dayEvents" por equipo hacia el almacén compartido "events:<mes>".
+  async function migrateStoredData(){
+    var teamIds = Object.keys(state.config.teams);
+    var eventsByMonth = {};
+    for(var ti=0; ti<teamIds.length; ti++){
+      var tid = teamIds[ti];
+      var listRes;
+      try{ listRes = await window.storage.list('sched:'+tid+':', true); }catch(e){ listRes = null; }
+      var keys = (listRes && listRes.keys) || [];
+      for(var ki=0; ki<keys.length; ki++){
+        var key = keys[ki];
+        try{
+          var res = await window.storage.get(key, true);
+          var parsed = JSON.parse(res.value);
+          var changed = false;
+
+          if(tid==='coord' && parsed.schedule){
+            var newSchedule = {};
+            Object.keys(parsed.schedule).forEach(function(p){
+              if(REMOVED_COORD.indexOf(p)>=0){ changed = true; return; }
+              var np = RENAME_MAP_COORD.hasOwnProperty(p) ? RENAME_MAP_COORD[p] : p;
+              if(np !== p) changed = true;
+              newSchedule[np] = parsed.schedule[p];
+            });
+            parsed.schedule = newSchedule;
+          }
+
+          if(parsed.dayEvents && Object.keys(parsed.dayEvents).length){
+            var mk = key.split(':')[2];
+            eventsByMonth[mk] = eventsByMonth[mk] || {};
+            Object.keys(parsed.dayEvents).forEach(function(d){
+              var list = normalizeEventList(parsed.dayEvents[d]);
+              eventsByMonth[mk][d] = eventsByMonth[mk][d] || [];
+              list.forEach(function(ev){ if(eventsByMonth[mk][d].indexOf(ev)<0) eventsByMonth[mk][d].push(ev); });
+            });
+            delete parsed.dayEvents;
+            changed = true;
+          } else if(parsed.dayEvents){
+            delete parsed.dayEvents;
+            changed = true;
+          }
+
+          if(changed){
+            await window.storage.set(key, JSON.stringify(parsed), true);
+          }
+        }catch(e){ /* entrada ilegible: se omite */ }
+      }
+    }
+
+    var monthKeys = Object.keys(eventsByMonth);
+    for(var mi=0; mi<monthKeys.length; mi++){
+      var mk2 = monthKeys[mi];
+      var existing = {};
+      try{
+        var er = await window.storage.get('events:'+mk2, true);
+        existing = JSON.parse(er.value) || {};
+      }catch(e){ existing = {}; }
+      Object.keys(eventsByMonth[mk2]).forEach(function(d){
+        existing[d] = existing[d] || [];
+        eventsByMonth[mk2][d].forEach(function(ev){ if(existing[d].indexOf(ev)<0) existing[d].push(ev); });
+      });
+      try{ await window.storage.set('events:'+mk2, JSON.stringify(existing), true); }catch(e){}
+    }
+  }
+
+  function normalizeEventList(v){
+    if(Array.isArray(v)) return v.slice();
+    if(typeof v === 'string' && v) return [v];
+    return [];
+  }
+
+  async function loadMonthEvents(){
+    try{
+      var res = await window.storage.get('events:'+monthKey(state.year,state.month), true);
+      var parsed = JSON.parse(res.value) || {};
+      var norm = {};
+      Object.keys(parsed).forEach(function(d){
+        var l = normalizeEventList(parsed[d]);
+        if(l.length) norm[d] = l;
+      });
+      state.monthEvents = norm;
+    }catch(e){
+      state.monthEvents = {};
+    }
+  }
+  async function saveMonthEvents(){
+    try{
+      await window.storage.set('events:'+monthKey(state.year,state.month), JSON.stringify(state.monthEvents), true);
+      showToast('Guardado ✓');
+    }catch(e){ showToast('Error al guardar', true); }
+  }
+
+  async function loadAllSchedules(){
+    var teamIds = Object.keys(state.config.teams);
+    var y=state.year, m=state.month;
+    var results = await Promise.all(teamIds.map(async function(tid){
+      try{
+        var res = await window.storage.get('sched:'+tid+':'+monthKey(y,m), true);
+        var parsed = JSON.parse(res.value);
+        parsed.schedule = parsed.schedule || {};
+        parsed.exceptions = parsed.exceptions || [];
+        parsed.requests = parsed.requests || [];
+        parsed.note = parsed.note || '';
+        return [tid, parsed];
+      }catch(e){
+        return [tid, {schedule:{}, note:'', exceptions:[], requests:[]}];
+      }
+    }));
+    state.schedAll = {};
+    results.forEach(function(r){ state.schedAll[r[0]] = r[1]; });
+  }
+  async function saveSched(teamId){
+    try{
+      await window.storage.set('sched:'+teamId+':'+monthKey(state.year,state.month), JSON.stringify(state.schedAll[teamId]), true);
+      showToast('Guardado ✓');
+    }catch(e){ showToast('Error al guardar', true); }
+  }
+
+  function team(){ return state.config.teams[state.team]; }
+  function sched(){ return state.schedAll[state.team]; }
+  function orderedMembers(tm){
+    var excl = tm.excludedFromMin||[];
+    var reg = tm.members.filter(function(p){return excl.indexOf(p)<0;});
+    var ex = tm.members.filter(function(p){return excl.indexOf(p)>=0;});
+    return reg.concat(ex);
+  }
+  function countableMembers(tm){
+    var excl = tm.excludedFromMin||[];
+    return tm.members.filter(function(p){return excl.indexOf(p)<0;});
+  }
+
+  /* ---------- Rule engine ---------- */
+
+  function mondayOf(date){
+    var d = new Date(date); var day = d.getDay();
+    var diff = (day===0? -6 : 1-day);
+    d.setDate(d.getDate()+diff); d.setHours(0,0,0,0);
+    return d;
+  }
+  function computeWeekType(auto, y, m, day){
+    var target = new Date(y,m,day);
+    var refMonday = mondayOf(new Date(auto.weekARefStart+'T00:00:00'));
+    var targetMonday = mondayOf(target);
+    var weeksDiff = Math.round((targetMonday - refMonday) / (7*86400000));
+    var mod = ((weeksDiff % 2)+2)%2;
+    return mod===0 ? 'A':'B';
+  }
+  function computeMonthType(refStart, y, m){
+    var parts = refStart.split('-');
+    var refY = parseInt(parts[0],10), refM = parseInt(parts[1],10)-1;
+    var diff = (y*12+m) - (refY*12+refM);
+    var mod = ((diff%2)+2)%2;
+    return mod===0 ? 'M1':'M2';
+  }
+  function expectedAutoCode(tm, person, y, m, day, dow){
+    if(!tm.auto || dow===0 || dow===6) return null;
+    if(tm.auto.type==='alternating-week'){
+      var wt = computeWeekType(tm.auto, y, m, day);
+      var days = wt==='A' ? tm.auto.weekADays : tm.auto.weekBDays;
+      return days.indexOf(dow)>=0 ? 'T' : null;
+    }
+    if(tm.auto.type==='per-person'){
+      var rule = tm.auto.rules.filter(function(r){return r.person===person;})[0];
+      if(!rule) return null;
+      if(rule.mode==='fixed'){ return rule.days.indexOf(dow)>=0 ? 'T' : null; }
+      if(rule.mode==='alt-month'){
+        var mt = computeMonthType(rule.refStart, y, m);
+        var days = mt==='M1' ? rule.m1Days : rule.m2Days;
+        return days.indexOf(dow)>=0 ? 'T' : null;
+      }
+    }
+    return null;
+  }
+
+  function newHireRestrictionFor(tm, person){
+    return (tm.newHireRestrictions||[]).filter(function(r){return r.person===person;})[0] || null;
+  }
+  function isInNewHireWindow(tm, person, y, m, d){
+    var r = newHireRestrictionFor(tm, person);
+    if(!r || !r.startDate) return false;
+    var start = new Date(r.startDate+'T00:00:00');
+    var end = new Date(start); end.setMonth(end.getMonth()+6);
+    var target = new Date(y,m,d);
+    return target>=start && target<end;
+  }
+
+  function computeAlerts(teamId){
+    var tm = state.config.teams[teamId];
+    var sd = state.schedAll[teamId];
+    var y=state.year, m=state.month, nDays=daysInMonth(y,m);
+    var alerts = [];
+    var counted = countableMembers(tm);
+
+    for(var d=1; d<=nDays; d++){
+      if(isWeekend(y,m,d)) continue;
+      var dow = new Date(y,m,d).getDay();
+      var dayEvts = state.monthEvents[d] || [];
+      var isInicioDay = dayEvts.indexOf('inicio')>=0;
+      var effectiveMin = (isInicioDay && tm.minPresencialInicio>0) ? tm.minPresencialInicio : tm.minPresencial;
+
+      var presencial = 0;
+      counted.forEach(function(p){
+        var c = (sd.schedule[p]||{})[d] || '';
+        if(c==='') presencial++;
+      });
+      if(effectiveMin>0 && presencial<effectiveMin){
+        alerts.push({ id:'min:'+teamId+':'+d, day:d, type:'min',
+          message:'Presencial insuficiente: '+presencial+'/'+effectiveMin+(isInicioDay?' (día de INICIO — se requieren '+effectiveMin+' presenciales)':''),
+          people:[] });
+      }
+
+      (tm.incompatible||[]).forEach(function(pair){
+        var c1 = (sd.schedule[pair[0]]||{})[d] || '';
+        var c2 = (sd.schedule[pair[1]]||{})[d] || '';
+        if(c1==='T' && c2==='T'){
+          var key = [pair[0],pair[1]].slice().sort().join('|');
+          alerts.push({ id:'incompat:'+teamId+':'+d+':'+key, day:d, type:'incompat',
+            message:'Teletrabajo incompatible: '+pair[0]+' y '+pair[1], people:[pair[0],pair[1]] });
+        }
+      });
+
+      if(tm.auto){
+        tm.members.forEach(function(p){
+          var expected = expectedAutoCode(tm, p, y, m, d, dow);
+          var actual = (sd.schedule[p]||{})[d] || '';
+          if(expected==='T' && actual===''){
+            alerts.push({ id:'pattern:'+teamId+':'+d+':'+p, day:d, type:'pattern',
+              message:'Rompe patrón automático: '+p+' debería teletrabajar según el calendario alterno',
+              people:[p] });
+          }
+        });
+      }
+    }
+
+    var exceptions = sd.exceptions || [];
+    alerts.forEach(function(a){
+      var ex = exceptions.filter(function(e){return e.id===a.id;})[0];
+      a.approved = !!ex;
+      a.approvedAt = ex ? ex.approvedAt : null;
+    });
+    return alerts;
+  }
+
+  /* ---------- Auto-generation ---------- */
+
+  function fillAutoForTeam(teamId){
+    var tm = state.config.teams[teamId];
+    if(!tm.auto) return 0;
+    var y=state.year, m=state.month, nDays=daysInMonth(y,m);
+    var sd = state.schedAll[teamId];
+    var filled = 0;
+    for(var d=1; d<=nDays; d++){
+      if(isWeekend(y,m,d)) continue;
+      var dow = new Date(y,m,d).getDay();
+      if(tm.auto.type==='alternating-week'){
+        var wt = computeWeekType(tm.auto,y,m,d);
+        var days = wt==='A' ? tm.auto.weekADays : tm.auto.weekBDays;
+        if(days.indexOf(dow)>=0){
+          tm.members.forEach(function(person){
+            sd.schedule[person] = sd.schedule[person] || {};
+            if(!sd.schedule[person][d]){ sd.schedule[person][d]='T'; filled++; }
+          });
+        }
+      } else if(tm.auto.type==='per-person'){
+        tm.auto.rules.forEach(function(rule){
+          var rdays;
+          if(rule.mode==='fixed'){ rdays = rule.days; }
+          else { var mt = computeMonthType(rule.refStart,y,m); rdays = mt==='M1' ? rule.m1Days : rule.m2Days; }
+          if(rdays.indexOf(dow)>=0){
+            sd.schedule[rule.person] = sd.schedule[rule.person] || {};
+            if(!sd.schedule[rule.person][d]){ sd.schedule[rule.person][d]='T'; filled++; }
+          }
+        });
+      }
+    }
+    return filled;
+  }
+
+  async function runAutoGenerate(){
+    var filled = fillAutoForTeam(state.team);
+    await saveSched(state.team);
+    showToast('Planificación generada: '+filled+' días rellenados');
+    renderAll();
+  }
+
+  async function maybeAutoFillOnLoad(){
+    if(!isAutoFromOrLater(state.year, state.month)) return;
+    var teamIds = Object.keys(state.config.teams);
+    for(var i=0;i<teamIds.length;i++){
+      var tid = teamIds[i];
+      var tm = state.config.teams[tid];
+      if(!tm.auto) continue;
+      var sd = state.schedAll[tid];
+      var hasAny = Object.keys(sd.schedule).some(function(p){ return Object.keys(sd.schedule[p]||{}).length>0; });
+      if(hasAny) continue;
+      var filled = fillAutoForTeam(tid);
+      if(filled>0) await saveSched(tid);
+    }
+  }
+
+  /* ---------- Rendering ---------- */
+
+  function renderTabs(){
+    var el = document.getElementById('tabs');
+    el.innerHTML = '';
+    Object.keys(state.config.teams).forEach(function(tid){
+      var b = document.createElement('button');
+      b.className = 'tab' + (tid===state.team ? ' active' : '');
+      b.textContent = state.config.teams[tid].name;
+      b.onclick = function(){ state.team = tid; renderAll(); };
+      el.appendChild(b);
+    });
+    var sumBtn = document.createElement('button');
+    sumBtn.className = 'tab tab-summary' + (state.team==='summary' ? ' active' : '');
+    sumBtn.textContent = 'Resumen mensual';
+    sumBtn.onclick = function(){ state.team = 'summary'; renderAll(); };
+    el.appendChild(sumBtn);
+  }
+
+  function renderMonthLabel(){
+    document.getElementById('monthLabel').textContent = MONTH_NAMES[state.month] + ' ' + state.year;
+  }
+
+  function renderLegend(){
+    var el = document.getElementById('legend');
+    el.innerHTML = '';
+    var order = ['T','V','P','IM','B','C'];
+    order.forEach(function(c){
+      var item = document.createElement('div');
+      item.className = 'item';
+      var icon = ICON[c] ? ICON[c]+' ' : '';
+      item.innerHTML = '<span class="dot" style="background:'+LEGEND_COLOR[c]+'"></span><b>'+icon+c+'</b> · '+state.config.legend[c].label;
+      el.appendChild(item);
+    });
+    var blank = document.createElement('div');
+    blank.className = 'item';
+    blank.innerHTML = '<span class="dot" style="background:#fff;border:1px solid var(--line)"></span> 🏢 Presencial';
+    el.appendChild(blank);
+  }
+
+  function renderInfoLine(){
+    var el = document.getElementById('infoLine');
+    if(state.team==='summary'){ el.textContent=''; return; }
+    var tm = team();
+    var parts = [];
+    if(tm.minPresencial>0) parts.push('Mínimo presencial: <b>'+tm.minPresencial+'</b>'+(tm.minPresencialInicio>0?' (<b>'+tm.minPresencialInicio+'</b> en días de INICIO)':''));
+    if(tm.excludedFromMin && tm.excludedFromMin.length) parts.push('excluidos de mínimos: '+tm.excludedFromMin.map(escapeHtml).join(', '));
+    if(tm.incompatible && tm.incompatible.length) parts.push(tm.incompatible.length+' pareja(s) incompatible(s) vigilada(s)');
+    if(tm.auto) parts.push('patrón automático activo'+(isAutoFromOrLater(state.year,state.month)?'':' (a partir de noviembre 2026)'));
+    el.innerHTML = parts.length ? parts.join(' · ') : 'Sin reglas específicas para este equipo.';
+  }
+
+  function renderEventsBanner(){
+    var el = document.getElementById('eventsBanner');
+    var evDays = Object.keys(state.monthEvents||{}).map(Number).filter(function(d){return state.monthEvents[d] && state.monthEvents[d].length;}).sort(function(a,b){return a-b;});
+    if(evDays.length===0){ el.style.display='none'; return; }
+    el.style.display = 'block';
+    el.innerHTML = '📌 <b>Eventos este mes (todas las áreas):</b> ' + evDays.map(function(d){
+      return 'Día '+d+' — '+state.monthEvents[d].map(function(e){return EVENT_LABELS[e];}).join(', ');
+    }).join(' · ');
+  }
+
+  function renderPendingReminder(){
+    var el = document.getElementById('pendingReminder');
+    if(state.team==='summary' || state.mode==='edit'){ el.style.display='none'; return; }
+    var sd = sched();
+    var pending = (sd.requests||[]).filter(function(r){return r.status==='pending';});
+    if(pending.length===0){ el.style.display='none'; return; }
+    el.style.display = 'block';
+    el.innerHTML = '⏳ <b>'+pending.length+'</b> solicitud'+(pending.length>1?'es':'')+' pendiente'+(pending.length>1?'s':'')+' de aprobación este mes. Activa «Modo edición» (con la contraseña) para revisarlas y aprobarlas.';
+  }
+
+
+  function renderNote(){
+    var bar = document.getElementById('noteBar');
+    var content = document.getElementById('noteContent');
+    var sd = sched();
+    if(state.mode==='edit'){
+      bar.style.display = 'flex';
+      content.innerHTML = '';
+      var ta = document.createElement('textarea');
+      ta.placeholder = 'Añade una nota para este mes/equipo (formaciones, auditorías, muestras, ECG…)';
+      ta.value = sd.note;
+      ta.oninput = function(){ sd.note = ta.value; };
+      ta.onblur = function(){ saveSched(state.team); };
+      content.appendChild(ta);
+    } else {
+      if(sd.note && sd.note.trim()){ bar.style.display='flex'; content.textContent = sd.note; }
+      else { bar.style.display='none'; }
+    }
+  }
+
+  function renderAutoGenBtn(){
+    var tm = team();
+    var btn = document.getElementById('autoGenBtn');
+    if(tm.auto && state.mode==='edit'){
+      btn.style.display = 'inline-flex';
+      btn.onclick = runAutoGenerate;
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  function countCode(sd, person, code){
+    var days = sd.schedule[person] || {};
+    var n = 0;
+    Object.keys(days).forEach(function(dd){ if(days[dd]===code) n++; });
+    return n;
+  }
+
+  function renderTable(){
+    var tm = team(), sd = sched();
+    var y=state.year, m=state.month, nDays=daysInMonth(y,m);
+    var alerts = state.currentAlerts;
+    var excl = tm.excludedFromMin||[];
+    var dayEvents = state.monthEvents || {};
+    function evtsOf(d){ return dayEvents[d] || []; }
+
+    var conflictCells = {}, exCells = {};
+    alerts.forEach(function(a){
+      (a.people||[]).forEach(function(p){
+        var key = p+'|'+a.day;
+        if(a.approved) exCells[key]=true; else conflictCells[key]=true;
+      });
+    });
+    var conflictDays = {}, exDays = {};
+    alerts.forEach(function(a){
+      if(a.type==='min'){ if(a.approved) exDays[a.day]=true; else conflictDays[a.day]=true; }
+    });
+
+    var html = '<thead><tr class="hrow1">';
+    html += '<th class="namehead" rowspan="2">Nombre</th>';
+    for(var d=1; d<=nDays; d++){
+      var dow = new Date(y,m,d).getDay();
+      var weekend = isWeekend(y,m,d);
+      var evts = evtsOf(d);
+      var cls = 'daycell'+(weekend?' weekend':'')+(conflictDays[d]&&!weekend?' warnday':'')+(!conflictDays[d]&&exDays[d]&&!weekend?' exday':'')+(evts.length&&!weekend?' dayevent-col':'');
+      var evtLabel = evts.map(function(e){return EVENT_LABELS[e];}).join(', ');
+      var title = evts.length ? ' title="'+escapeHtml(evtLabel)+(conflictDays[d]?' · incidencia sin resolver':'')+'"' : (conflictDays[d] ? ' title="Incidencia sin resolver este día"' : (exDays[d] ? ' title="Excepción aprobada este día"' : ''));
+      html += '<th class="'+cls+'"'+title+'><div class="wd">'+WD[dow]+'</div></th>';
+    }
+    html += '<th class="totalhead" rowspan="2">TW</th><th class="totalhead" rowspan="2">VAC</th></tr><tr class="hrow2">';
+    for(var d2=1; d2<=nDays; d2++){
+      var weekend2 = isWeekend(y,m,d2);
+      var evts2 = evtsOf(d2);
+      html += '<th class="daycell'+(weekend2?' weekend':'')+(evts2.length&&!weekend2?' dayevent-col':'')+'"><div class="num">'+d2+'</div></th>';
+    }
+    html += '</tr></thead><tbody>';
+
+    EVENT_KEYS.forEach(function(evKey){
+      html += '<tr class="event-row"><td class="namecell">'+EVENT_ROW_LABEL[evKey]+'</td>';
+      for(var de=1; de<=nDays; de++){
+        var weekendE = isWeekend(y,m,de);
+        var evts3 = evtsOf(de);
+        var isSet = evts3.indexOf(evKey)>=0;
+        var editableE = (state.mode==='edit' && !weekendE);
+        html += '<td class="daycell event-cell'+(weekendE?' weekend':'')+(isSet?' set':'')+(editableE?' editable':'')+'"'
+              + ' data-day="'+de+'" data-event="'+evKey+'"'
+              + (weekendE ? '' : ' title="'+escapeHtml(EVENT_LABELS[evKey])+(isSet?' · activo este día':'')+'"')
+              + '>'+(weekendE?'':(isSet?'✓':'—'))+'</td>';
+      }
+      html += '<td class="totalcell" style="background:transparent;"></td><td class="totalcell" style="background:transparent;"></td></tr>';
+    });
+
+    orderedMembers(tm).forEach(function(person){
+      var isExcluded = excl.indexOf(person)>=0;
+      html += '<tr><td class="namecell'+(isExcluded?' excluded':'')+'">'+(isExcluded?'<span class="crown">★</span>':'')+escapeHtml(person)+'</td>';
+      for(var d=1; d<=nDays; d++){
+        var weekend = isWeekend(y,m,d);
+        var code = (sd.schedule[person]||{})[d] || '';
+        var editable = (state.mode==='edit' && !weekend);
+        var today = isToday(y,m,d);
+        var key = person+'|'+d;
+        var conflict = conflictCells[key];
+        var exok = !conflict && exCells[key];
+        var evts4 = evtsOf(d);
+        var evtLabel4 = evts4.map(function(e){return EVENT_LABELS[e];}).join(', ');
+        var display = code ? (ICON[code] || code) : (weekend ? '' : '🏢');
+        html += '<td class="daycell'+(code?' '+code:' empty'+(weekend?'':' blank'))+(weekend?' weekend':'')+(editable?' editable':'')+(today?' todaycol':'')+(conflict?' conflict':'')+(exok?' exok':'')+(evts4.length&&!weekend?' dayevent-col':'')+'"'
+              + ' data-person="'+encAttr(person)+'" data-day="'+d+'"'
+              + ' title="'+escapeHtml((code? (state.config.legend[code]?state.config.legend[code].label:code) : (weekend?'Fin de semana':'Presencial'))+(conflict?' · incidencia sin resolver':'')+(exok?' · excepción aprobada':'')+(evtLabel4?' · '+evtLabel4:''))+'"'
+              + '>'+display+'</td>';
+      }
+      var twCount = countCode(sd, person, 'T');
+      var vacCount = countCode(sd, person, 'V');
+      html += '<td class="totalcell">'+twCount+'</td><td class="totalcell">'+vacCount+'</td></tr>';
+    });
+
+    html += '<tr class="onsite-row"><td class="namecell" style="color:#fff;">En centro</td>';
+    var counted = countableMembers(tm);
+    for(var d3=1; d3<=nDays; d3++){
+      if(isWeekend(y,m,d3)){ html += '<td class="daycell weekend">·</td>'; continue; }
+      var used = 0;
+      counted.forEach(function(p){ var c=(sd.schedule[p]||{})[d3]||''; if(c) used++; });
+      var evts5 = evtsOf(d3);
+      html += '<td class="daycell'+(evts5.length?' dayevent-col':'')+'">'+(counted.length-used)+'</td>';
+    }
+    html += '<td class="totalcell" style="background:transparent;"></td><td class="totalcell" style="background:transparent;"></td></tr>';
+
+    html += '</tbody>';
+
+    document.getElementById('rosterTable').innerHTML = html;
+    bindCellEditing();
+    bindEventRow();
+  }
+
+  function bindEventRow(){
+    if(state.mode!=='edit') return;
+    document.querySelectorAll('#rosterTable td.event-cell.editable').forEach(function(td){
+      td.addEventListener('click', async function(){
+        var day = td.getAttribute('data-day');
+        var evKey = td.getAttribute('data-event');
+        var list = state.monthEvents[day] || [];
+        var idx = list.indexOf(evKey);
+        if(idx>=0){ list.splice(idx,1); } else { list.push(evKey); }
+        if(list.length){ state.monthEvents[day] = list; } else { delete state.monthEvents[day]; }
+        await saveMonthEvents();
+        state.currentAlerts = computeAlerts(state.team);
+        renderTable(); renderAlerts(); renderInfoLine(); renderEventsBanner();
+      });
+    });
+  }
+
+  function bindCellEditing(){
+    if(state.mode!=='edit') return;
+    document.querySelectorAll('#rosterTable td.daycell.editable').forEach(function(td){
+      td.addEventListener('click', function(){
+        if(td.querySelector('input')) return;
+        var person = decAttr(td.getAttribute('data-person'));
+        var day = td.getAttribute('data-day');
+        var sd = sched();
+        var cur = (sd.schedule[person]||{})[day] || '';
+        var originalHTML = td.innerHTML;
+        var committed = false;
+        td.innerHTML = '';
+        var inp = document.createElement('input');
+        inp.type = 'text'; inp.maxLength = 2; inp.value = cur;
+        inp.style.cssText = 'width:28px;height:26px;text-align:center;border:1.5px solid var(--maroon);border-radius:4px;font-family:inherit;font-size:11px;text-transform:uppercase;outline:none;';
+        td.appendChild(inp);
+        inp.focus(); inp.select();
+
+        function commit(){
+          if(committed) return; committed = true;
+          var val = inp.value.trim().toUpperCase();
+          if(val!=='' && VALID_CODES.indexOf(val)<0){
+            showToast('Código no válido. Usa T, V, P, IM, B o C.', true);
+            td.innerHTML = originalHTML;
+            return;
+          }
+          if(val==='T' && isInNewHireWindow(team(), person, state.year, state.month, parseInt(day))){
+            showToast(person+' no puede teletrabajar durante sus primeros 6 meses.', true);
+            td.innerHTML = originalHTML;
+            return;
+          }
+          sd.schedule[person] = sd.schedule[person] || {};
+          if(val===''){ delete sd.schedule[person][day]; } else { sd.schedule[person][day] = val; }
+          saveSched(state.team).then(function(){
+            state.currentAlerts = computeAlerts(state.team);
+            renderTable(); renderAlerts();
+          });
+        }
+        function cancel(){ if(committed) return; committed = true; td.innerHTML = originalHTML; }
+
+        inp.addEventListener('keydown', function(e){
+          if(e.key==='Enter'){ e.preventDefault(); commit(); }
+          else if(e.key==='Escape'){ e.preventDefault(); cancel(); }
+        });
+        inp.addEventListener('blur', function(){ commit(); });
+        inp.addEventListener('click', function(e){ e.stopPropagation(); });
+      });
+    });
+  }
+
+  function renderAlerts(){
+    var panel = document.getElementById('alertsPanel');
+    if(state.team==='summary'){ panel.style.display='none'; return; }
+    var alerts = state.currentAlerts.slice().sort(function(a,b){return a.day-b.day;});
+    panel.style.display='block';
+    if(alerts.length===0){
+      panel.innerHTML = '<h3>Incidencias — '+MONTH_NAMES[state.month]+' '+state.year+'</h3><div class="panel-empty">✓ Sin incidencias este mes para '+team().name+'.</div>';
+      return;
+    }
+    var html = '<h3>Incidencias — '+MONTH_NAMES[state.month]+' '+state.year+' ('+alerts.length+')</h3>';
+    alerts.forEach(function(a){
+      html += '<div class="alert-row '+(a.approved?'approved':'active')+'">';
+      html += '<span class="alert-day">Día '+a.day+'</span>';
+      html += '<span class="alert-msg">'+escapeHtml(a.message)+'</span>';
+      if(a.approved){
+        html += '<span class="alert-badge">✓ Excepción aprobada'+(a.approvedAt?' · '+new Date(a.approvedAt).toLocaleDateString('es-ES'):'')+'</span>';
+        if(state.mode==='edit'){ html += '<button class="alert-btn revoke" data-id="'+encAttr(a.id)+'">Revocar</button>'; }
+      } else if(state.mode==='edit'){
+        html += '<button class="alert-btn approve" data-id="'+encAttr(a.id)+'" data-detail="'+encAttr(a.message)+'">Aprobar excepción</button>';
+      }
+      html += '</div>';
+    });
+    panel.innerHTML = html;
+
+    panel.querySelectorAll('.alert-btn.approve').forEach(function(btn){
+      btn.onclick = async function(){
+        var id = decAttr(btn.getAttribute('data-id'));
+        var detail = decAttr(btn.getAttribute('data-detail'));
+        var sd = sched();
+        sd.exceptions = sd.exceptions || [];
+        sd.exceptions.push({id:id, detail:detail, approvedBy:'Ana', approvedAt:new Date().toISOString()});
+        await saveSched(state.team);
+        state.currentAlerts = computeAlerts(state.team);
+        renderTable(); renderAlerts();
+      };
+    });
+    panel.querySelectorAll('.alert-btn.revoke').forEach(function(btn){
+      btn.onclick = async function(){
+        var id = decAttr(btn.getAttribute('data-id'));
+        var sd = sched();
+        sd.exceptions = (sd.exceptions||[]).filter(function(e){return e.id!==id;});
+        await saveSched(state.team);
+        state.currentAlerts = computeAlerts(state.team);
+        renderTable(); renderAlerts();
+      };
+    });
+  }
+
+  function renderRequests(){
+    var panel = document.getElementById('requestsPanel');
+    if(state.team==='summary' || state.mode!=='edit'){ panel.style.display='none'; return; }
+    var sd = sched();
+    var all = sd.requests || [];
+    var pending = all.filter(function(r){return r.status==='pending';});
+    var resolved = all.filter(function(r){return r.status!=='pending';});
+    panel.style.display='block';
+
+    var html = '<h3>Solicitudes pendientes — '+MONTH_NAMES[state.month]+' '+state.year+' ('+pending.length+')</h3>';
+    if(pending.length===0){
+      html += '<div class="panel-empty">✓ No hay solicitudes pendientes.</div>';
+    } else {
+      pending.forEach(function(r){
+        var rtype = r.type || 'change';
+        html += '<div class="alert-row pending">';
+        html += '<span class="alert-day">Día '+r.day+'</span>';
+        if(rtype==='swap'){
+          html += '<span class="alert-msg"><b>'+escapeHtml(r.person)+'</b> ↔ <b>'+escapeHtml(r.colleague)+'</b> · intercambian ese día'+(r.note?' · '+escapeHtml(r.note):'')+'</span>';
+        } else {
+          var codeLabel = r.code ? (state.config.legend[r.code]?state.config.legend[r.code].label:r.code) : 'Presencial (quitar código)';
+          html += '<span class="alert-msg"><b>'+escapeHtml(r.person)+'</b> pide «'+escapeHtml(codeLabel)+'»'+(r.note?' · '+escapeHtml(r.note):'')+'</span>';
+        }
+        html += '<button class="alert-btn approve" data-id="'+encAttr(r.id)+'">Aprobar</button>';
+        html += '<button class="alert-btn reject" data-id="'+encAttr(r.id)+'">Rechazar</button>';
+        html += '</div>';
+      });
+    }
+    if(resolved.length){
+      html += '<div class="history-toggle" id="reqHistoryToggle">Ver histórico ('+resolved.length+') ▾</div>';
+      html += '<div id="reqHistory" style="display:none;">';
+      resolved.slice().reverse().forEach(function(r){
+        var rtype = r.type || 'change';
+        html += '<div class="alert-row '+(r.status==='approved'?'approved':'rejected')+'">';
+        html += '<span class="alert-day">Día '+r.day+'</span>';
+        if(rtype==='swap'){
+          html += '<span class="alert-msg">'+escapeHtml(r.person)+' ↔ '+escapeHtml(r.colleague)+(r.note?' · '+escapeHtml(r.note):'')+'</span>';
+        } else {
+          var codeLabel = r.code ? (state.config.legend[r.code]?state.config.legend[r.code].label:r.code) : 'Presencial';
+          html += '<span class="alert-msg">'+escapeHtml(r.person)+' · '+escapeHtml(codeLabel)+(r.note?' · '+escapeHtml(r.note):'')+'</span>';
+        }
+        html += '<span class="alert-badge">'+(r.status==='approved'?'✓ Aprobada':'✗ Rechazada')+'</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    panel.innerHTML = html;
+
+    var histToggle = document.getElementById('reqHistoryToggle');
+    if(histToggle){
+      histToggle.onclick = function(){
+        var h = document.getElementById('reqHistory');
+        h.style.display = h.style.display==='none' ? 'block' : 'none';
+      };
+    }
+    panel.querySelectorAll('.alert-btn.approve').forEach(function(btn){
+      btn.onclick = async function(){
+        var id = decAttr(btn.getAttribute('data-id'));
+        var sd2 = sched();
+        var req = (sd2.requests||[]).filter(function(r){return r.id===id;})[0];
+        if(!req) return;
+        var rtype = req.type || 'change';
+        var tmNow = team();
+        if(rtype==='swap'){
+          var curPerson = (sd2.schedule[req.person]||{})[req.day] || '';
+          var curColleague = (sd2.schedule[req.colleague]||{})[req.day] || '';
+          if(curColleague==='T' && isInNewHireWindow(tmNow, req.person, state.year, state.month, req.day)){
+            showToast(req.person+' no puede teletrabajar durante sus primeros 6 meses — intercambio bloqueado.', true);
+            return;
+          }
+          if(curPerson==='T' && isInNewHireWindow(tmNow, req.colleague, state.year, state.month, req.day)){
+            showToast(req.colleague+' no puede teletrabajar durante sus primeros 6 meses — intercambio bloqueado.', true);
+            return;
+          }
+          sd2.schedule[req.person] = sd2.schedule[req.person] || {};
+          sd2.schedule[req.colleague] = sd2.schedule[req.colleague] || {};
+          var a = sd2.schedule[req.person][req.day] || '';
+          var b = sd2.schedule[req.colleague][req.day] || '';
+          if(b===''){ delete sd2.schedule[req.person][req.day]; } else { sd2.schedule[req.person][req.day] = b; }
+          if(a===''){ delete sd2.schedule[req.colleague][req.day]; } else { sd2.schedule[req.colleague][req.day] = a; }
+        } else {
+          if(req.code==='T' && isInNewHireWindow(tmNow, req.person, state.year, state.month, req.day)){
+            showToast(req.person+' no puede teletrabajar durante sus primeros 6 meses — solicitud bloqueada.', true);
+            return;
+          }
+          sd2.schedule[req.person] = sd2.schedule[req.person] || {};
+          if(req.code===''){ delete sd2.schedule[req.person][req.day]; } else { sd2.schedule[req.person][req.day] = req.code; }
+        }
+        req.status = 'approved'; req.resolvedAt = new Date().toISOString();
+        await saveSched(state.team);
+        state.currentAlerts = computeAlerts(state.team);
+        renderTable(); renderAlerts(); renderRequests();
+      };
+    });
+    panel.querySelectorAll('.alert-btn.reject').forEach(function(btn){
+      btn.onclick = async function(){
+        var id = decAttr(btn.getAttribute('data-id'));
+        var sd2 = sched();
+        var req = (sd2.requests||[]).filter(function(r){return r.id===id;})[0];
+        if(!req) return;
+        req.status = 'rejected'; req.resolvedAt = new Date().toISOString();
+        await saveSched(state.team);
+        renderRequests();
+      };
+    });
+  }
+
+  function renderSummary(){
+    var y=state.year, m=state.month, nDays=daysInMonth(y,m);
+    var rows = [];
+    Object.keys(state.config.teams).forEach(function(teamId){
+      var tm = state.config.teams[teamId];
+      var sd = state.schedAll[teamId];
+      var excl = tm.excludedFromMin||[];
+      orderedMembers(tm).forEach(function(person){
+        var tw=0, vac=0, pres=0;
+        for(var d=1; d<=nDays; d++){
+          if(isWeekend(y,m,d)) continue;
+          var c = (sd.schedule[person]||{})[d] || '';
+          if(c==='T') tw++; else if(c==='V') vac++; else if(c==='') pres++;
+        }
+        rows.push({person:person, teamName:tm.name, tw:tw, vac:vac, pres:pres, excluded:excl.indexOf(person)>=0});
+      });
+    });
+    var html = '<table class="summary-table"><thead><tr><th>Nombre</th><th>Equipo</th><th>Teletrabajo</th><th>Vacaciones</th><th>Presencial</th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      html += '<tr class="'+(r.excluded?'excluded-row':'')+'"><td>'+(r.excluded?'★ ':'')+escapeHtml(r.person)+'</td><td>'+escapeHtml(r.teamName)+'</td><td class="num">'+r.tw+'</td><td class="num">'+r.vac+'</td><td class="num">'+r.pres+'</td></tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('summaryWrap').innerHTML = html;
+  }
+
+  function renderSettings(){
+    if(state.team==='summary') return;
+    var tm = team();
+
+    var ml = document.getElementById('memberList');
+    ml.innerHTML = '';
+    orderedMembers(tm).forEach(function(person){
+      var i = tm.members.indexOf(person);
+      var row = document.createElement('div');
+      row.className = 'member-row';
+      var excludedChecked = (tm.excludedFromMin||[]).indexOf(person)>=0;
+      row.innerHTML = '<span class="mname">'+escapeHtml(person)+'</span>'
+        + '<span class="mopts"><label><input type="checkbox" data-person="'+encAttr(person)+'" class="exclchk" '+(excludedChecked?'checked':'')+'> excluir de mínimos</label></span>';
+      var btn = document.createElement('button');
+      btn.textContent = '×'; btn.title = 'Quitar del equipo';
+      btn.onclick = async function(){
+        tm.members.splice(i,1);
+        tm.incompatible = (tm.incompatible||[]).filter(function(pr){return pr[0]!==person && pr[1]!==person;});
+        tm.excludedFromMin = (tm.excludedFromMin||[]).filter(function(p){return p!==person;});
+        if(tm.auto && tm.auto.type==='per-person'){ tm.auto.rules = tm.auto.rules.filter(function(r){return r.person!==person;}); }
+        delete sched().schedule[person];
+        await saveConfig(); await saveSched(state.team);
+        renderAll();
+      };
+      row.appendChild(btn);
+      ml.appendChild(row);
+    });
+    ml.querySelectorAll('.exclchk').forEach(function(chk){
+      chk.onchange = async function(){
+        var person = decAttr(chk.getAttribute('data-person'));
+        tm.excludedFromMin = tm.excludedFromMin || [];
+        if(chk.checked){ if(tm.excludedFromMin.indexOf(person)<0) tm.excludedFromMin.push(person); }
+        else { tm.excludedFromMin = tm.excludedFromMin.filter(function(p){return p!==person;}); }
+        await saveConfig();
+        state.currentAlerts = computeAlerts(state.team);
+        renderTable(); renderAlerts(); renderInfoLine();
+      };
+    });
+    document.getElementById('newMemberInput').value = '';
+
+    document.getElementById('minPresInput').value = tm.minPresencial;
+    document.getElementById('minPresInput').onchange = async function(){
+      tm.minPresencial = parseInt(this.value)||0;
+      await saveConfig();
+      state.currentAlerts = computeAlerts(state.team);
+      renderTable(); renderAlerts(); renderInfoLine();
+    };
+    document.getElementById('minPresInicioInput').value = tm.minPresencialInicio;
+    document.getElementById('minPresInicioInput').onchange = async function(){
+      tm.minPresencialInicio = parseInt(this.value)||0;
+      await saveConfig();
+      renderAll();
+    };
+
+    var il = document.getElementById('incompatList');
+    il.innerHTML = '';
+    (tm.incompatible||[]).forEach(function(pair, i){
+      var row = document.createElement('div');
+      row.className = 'pair-row';
+      row.innerHTML = '<span>'+escapeHtml(pair[0])+' ↔ '+escapeHtml(pair[1])+'</span>';
+      var btn = document.createElement('button');
+      btn.textContent = '×';
+      btn.onclick = async function(){
+        tm.incompatible.splice(i,1);
+        await saveConfig();
+        state.currentAlerts = computeAlerts(state.team);
+        renderTable(); renderAlerts();
+      };
+      row.appendChild(btn);
+      il.appendChild(row);
+    });
+    var sel1 = document.getElementById('incompatP1'), sel2 = document.getElementById('incompatP2');
+    sel1.innerHTML = tm.members.map(function(p){return '<option value="'+escapeHtml(p)+'">'+escapeHtml(p)+'</option>';}).join('');
+    sel2.innerHTML = sel1.innerHTML;
+    document.getElementById('addPairBtn').onclick = async function(){
+      var p1 = sel1.value, p2 = sel2.value;
+      if(!p1 || !p2 || p1===p2){ showToast('Selecciona dos personas distintas', true); return; }
+      tm.incompatible = tm.incompatible || [];
+      var exists = tm.incompatible.some(function(pr){ return (pr[0]===p1&&pr[1]===p2)||(pr[0]===p2&&pr[1]===p1); });
+      if(exists){ showToast('Esa pareja ya existe', true); return; }
+      tm.incompatible.push([p1,p2]);
+      await saveConfig();
+      state.currentAlerts = computeAlerts(state.team);
+      renderTable(); renderAlerts(); renderSettings();
+    };
+
+    var nhl = document.getElementById('newHireList');
+    nhl.innerHTML = '';
+    (tm.newHireRestrictions||[]).forEach(function(r, i){
+      var start = new Date(r.startDate+'T00:00:00');
+      var end = new Date(start); end.setMonth(end.getMonth()+6);
+      var row = document.createElement('div');
+      row.className = 'pair-row';
+      row.innerHTML = '<span>'+escapeHtml(r.person)+' — sin TW desde '+start.toLocaleDateString('es-ES')+' hasta '+end.toLocaleDateString('es-ES')+'</span>';
+      var btn = document.createElement('button');
+      btn.textContent = '×';
+      btn.title = 'Quitar restricción';
+      btn.onclick = async function(){
+        tm.newHireRestrictions.splice(i,1);
+        await saveConfig();
+        state.currentAlerts = computeAlerts(state.team);
+        renderTable(); renderAlerts(); renderSettings();
+      };
+      row.appendChild(btn);
+      nhl.appendChild(row);
+    });
+    var nhSel = document.getElementById('newHirePerson');
+    nhSel.innerHTML = tm.members.map(function(p){return '<option value="'+escapeHtml(p)+'">'+escapeHtml(p)+'</option>';}).join('');
+    var nhDate = document.getElementById('newHireDate');
+    if(!nhDate.value) nhDate.value = todayISODate();
+    document.getElementById('addNewHireBtn').onclick = async function(){
+      var person = nhSel.value;
+      var startDate = nhDate.value;
+      if(!person){ showToast('Selecciona una persona', true); return; }
+      if(!startDate){ showToast('Indica una fecha de incorporación', true); return; }
+      tm.newHireRestrictions = tm.newHireRestrictions || [];
+      var idx = tm.newHireRestrictions.findIndex(function(r){return r.person===person;});
+      if(idx>=0){ tm.newHireRestrictions[idx].startDate = startDate; }
+      else { tm.newHireRestrictions.push({person:person, startDate:startDate}); }
+      await saveConfig();
+      state.currentAlerts = computeAlerts(state.team);
+      renderTable(); renderAlerts(); renderSettings();
+    };
+
+    var ae = document.getElementById('autoEditor');
+    ae.innerHTML = '';
+    if(!tm.auto){
+      ae.innerHTML = '<div class="muted">Sin patrón automático configurado para este equipo.</div>';
+    } else if(tm.auto.type==='alternating-week'){
+      ae.innerHTML =
+        '<div class="field"><label>Lunes de referencia (inicio Semana A)</label><input type="date" id="weekRefInput" value="'+tm.auto.weekARefStart+'"></div>'
+        + '<div class="field"><label>Semana A — días de teletrabajo</label><div class="daychecks" id="weekADays"></div></div>'
+        + '<div class="field"><label>Semana B — días de teletrabajo</label><div class="daychecks" id="weekBDays"></div></div>';
+      renderDayChecks('weekADays', tm.auto.weekADays, async function(days){ tm.auto.weekADays = days; await saveConfig(); refreshAfterAutoEdit(); });
+      renderDayChecks('weekBDays', tm.auto.weekBDays, async function(days){ tm.auto.weekBDays = days; await saveConfig(); refreshAfterAutoEdit(); });
+      document.getElementById('weekRefInput').onchange = async function(){ tm.auto.weekARefStart = this.value; await saveConfig(); refreshAfterAutoEdit(); };
+    } else if(tm.auto.type==='per-person'){
+      tm.auto.rules.forEach(function(rule, ri){
+        var block = document.createElement('div');
+        block.className = 'subrule';
+        if(rule.mode==='fixed'){
+          block.innerHTML = '<div class="rulename">'+escapeHtml(rule.person)+' — días fijos</div><div class="daychecks" id="fixedDays'+ri+'"></div>';
+          ae.appendChild(block);
+          renderDayChecks('fixedDays'+ri, rule.days, async function(days){ rule.days = days; await saveConfig(); refreshAfterAutoEdit(); });
+        } else {
+          block.innerHTML = '<div class="rulename">'+escapeHtml(rule.person)+' — meses alternos</div>'
+            + '<div class="field"><label>Mes de referencia (= M1)</label><input type="month" id="monthRef'+ri+'" value="'+rule.refStart+'"></div>'
+            + '<div class="field"><label>M1 — días</label><div class="daychecks" id="m1Days'+ri+'"></div></div>'
+            + '<div class="field"><label>M2 — días</label><div class="daychecks" id="m2Days'+ri+'"></div></div>';
+          ae.appendChild(block);
+          renderDayChecks('m1Days'+ri, rule.m1Days, async function(days){ rule.m1Days = days; await saveConfig(); refreshAfterAutoEdit(); });
+          renderDayChecks('m2Days'+ri, rule.m2Days, async function(days){ rule.m2Days = days; await saveConfig(); refreshAfterAutoEdit(); });
+          document.getElementById('monthRef'+ri).onchange = async function(){ rule.refStart = this.value; await saveConfig(); refreshAfterAutoEdit(); };
+        }
+      });
+    }
+
+    document.getElementById('pwChangeBtn').onclick = async function(){
+      var cur = document.getElementById('pwCurrent').value;
+      var next = document.getElementById('pwNew').value;
+      var hasPw = !!(state.config.editPassword && state.config.editPassword.length);
+      if(hasPw && cur !== state.config.editPassword){ showToast('La contraseña actual no coincide', true); return; }
+      if(!next || next.length<4){ showToast('La nueva contraseña debe tener al menos 4 caracteres', true); return; }
+      state.config.editPassword = next;
+      await saveConfig();
+      document.getElementById('pwCurrent').value=''; document.getElementById('pwNew').value='';
+      showToast('Contraseña actualizada');
+    };
+
+    var le = document.getElementById('legendEdit');
+    le.innerHTML = '';
+    Object.keys(state.config.legend).forEach(function(code){
+      var row = document.createElement('div');
+      row.className = 'legend-edit-row';
+      row.innerHTML = '<span class="dot" style="background:'+LEGEND_COLOR[code]+'"></span><code>'+code+'</code>';
+      var input = document.createElement('input');
+      input.type = 'text'; input.value = state.config.legend[code].label;
+      input.oninput = function(){ state.config.legend[code].label = input.value; renderLegend(); };
+      input.onblur = saveConfig;
+      row.appendChild(input);
+      le.appendChild(row);
+    });
+  }
+
+  function refreshAfterAutoEdit(){
+    state.currentAlerts = computeAlerts(state.team);
+    renderTable(); renderAlerts(); renderInfoLine();
+  }
+
+  function renderDayChecks(containerId, selectedDays, onChange){
+    var el = document.getElementById(containerId);
+    var html = '';
+    [1,2,3,4,5].forEach(function(d){
+      html += '<label><input type="checkbox" data-day="'+d+'" '+(selectedDays.indexOf(d)>=0?'checked':'')+'> '+WEEKDAY_LABEL[d]+'</label>';
+    });
+    el.innerHTML = html;
+    el.querySelectorAll('input[type=checkbox]').forEach(function(chk){
+      chk.onchange = function(){
+        var days = [];
+        el.querySelectorAll('input[type=checkbox]').forEach(function(c){ if(c.checked) days.push(parseInt(c.getAttribute('data-day'))); });
+        onChange(days);
+      };
+    });
+  }
+
+  function updateModeUI(){
+    var btn = document.getElementById('modeBtn'); var note = document.getElementById('modeNote');
+    if(state.mode==='edit'){
+      btn.textContent = 'Modo consulta'; btn.classList.remove('view');
+      note.textContent = 'Modo edición: los cambios se guardan automáticamente para todo el equipo.';
+    } else {
+      btn.textContent = 'Modo edición'; btn.classList.add('view');
+      note.textContent = 'Modo consulta: se puede ver el calendario y pedir cambios.';
+    }
+  }
+
+  function renderAll(){
+    renderTabs();
+    renderMonthLabel();
+    renderLegend();
+
+    var isSummary = state.team==='summary';
+    document.getElementById('tablewrap').style.display = isSummary ? 'none' : 'block';
+    document.getElementById('summaryWrap').style.display = isSummary ? 'block' : 'none';
+
+    if(isSummary){
+      document.getElementById('noteBar').style.display = 'none';
+      document.getElementById('infoLine').textContent = '';
+      document.getElementById('eventsBanner').style.display = 'none';
+      document.getElementById('pendingReminder').style.display = 'none';
+      document.getElementById('autoGenBtn').style.display = 'none';
+      document.getElementById('alertsPanel').style.display = 'none';
+      document.getElementById('requestsPanel').style.display = 'none';
+      renderSummary();
+      document.getElementById('settingsToggle').style.display = 'none';
+      document.getElementById('settingsPanel').style.display = 'none';
+    } else {
+      state.currentAlerts = computeAlerts(state.team);
+      renderInfoLine();
+      renderNote();
+      renderEventsBanner();
+      renderPendingReminder();
+      renderAutoGenBtn();
+      renderTable();
+      renderAlerts();
+      renderRequests();
+      if(state.mode==='edit'){
+        document.getElementById('settingsToggle').style.display='block';
+        renderSettings();
+      } else {
+        document.getElementById('settingsToggle').style.display='none';
+        document.getElementById('settingsPanel').style.display='none';
+      }
+    }
+    populateReqForm();
+  }
+
+  /* ---------- Password / mode ---------- */
+
+  function openPasswordPanel(){
+    var panel = document.getElementById('pwPanel');
+    var hasPw = !!(state.config.editPassword && state.config.editPassword.length);
+    panel.innerHTML = '';
+    var input = document.createElement('input');
+    input.type='password'; input.placeholder = hasPw ? 'Contraseña' : 'Crea una contraseña';
+    panel.appendChild(input);
+    var input2 = null;
+    if(!hasPw){
+      input2 = document.createElement('input');
+      input2.type='password'; input2.placeholder='Repite';
+      panel.appendChild(input2);
+    }
+    var btn = document.createElement('button');
+    btn.textContent = hasPw ? 'Entrar' : 'Crear';
+    var submit = async function(){
+      if(!hasPw){
+        if(!input.value || input.value.length<4){ showToast('Mínimo 4 caracteres', true); return; }
+        if(input.value !== input2.value){ showToast('Las contraseñas no coinciden', true); return; }
+        state.config.editPassword = input.value;
+        await saveConfig();
+        state.mode='edit'; panel.style.display='none'; updateModeUI(); renderAll();
+        showToast('Contraseña creada. Modo edición activado.');
+      } else {
+        if(input.value === state.config.editPassword){
+          state.mode='edit'; panel.style.display='none'; updateModeUI(); renderAll();
+        } else {
+          showToast('Contraseña incorrecta', true);
+        }
+      }
+    };
+    btn.onclick = submit;
+    panel.appendChild(btn);
+    var cancel = document.createElement('button');
+    cancel.textContent='Cancelar'; cancel.className='ghost';
+    cancel.onclick=function(){ panel.style.display='none'; };
+    panel.appendChild(cancel);
+    [input, input2].forEach(function(el){
+      if(!el) return;
+      el.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); submit(); } });
+    });
+    panel.style.display='flex';
+    input.focus();
+  }
+
+  document.getElementById('modeBtn').onclick = function(){
+    if(state.mode==='edit'){
+      state.mode='view'; updateModeUI(); renderAll();
+    } else {
+      openPasswordPanel();
+    }
+  };
+
+  document.getElementById('prevMonth').onclick = async function(){
+    state.month--; if(state.month<0){ state.month=11; state.year--; }
+    await loadAllSchedules(); await loadMonthEvents(); await maybeAutoFillOnLoad(); renderAll();
+  };
+  document.getElementById('nextMonth').onclick = async function(){
+    state.month++; if(state.month>11){ state.month=0; state.year++; }
+    await loadAllSchedules(); await loadMonthEvents(); await maybeAutoFillOnLoad(); renderAll();
+  };
+
+  document.getElementById('settingsToggle').onclick = function(){
+    var p = document.getElementById('settingsPanel');
+    p.style.display = p.style.display==='none' ? 'grid' : 'none';
+  };
+
+  document.getElementById('addMemberBtn').onclick = async function(){
+    var input = document.getElementById('newMemberInput');
+    var name = input.value.trim();
+    if(!name) return;
+    team().members.push(name);
+    input.value = '';
+    await saveConfig();
+    renderAll();
+  };
+  document.getElementById('newMemberInput').addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ document.getElementById('addMemberBtn').click(); }
+  });
+
+  /* ---------- Change requests (view mode) ---------- */
+
+  function dayOptionsHtml(){
+    var nDays = daysInMonth(state.year, state.month);
+    var opts = '';
+    for(var d=1; d<=nDays; d++){
+      if(isWeekend(state.year, state.month, d)) continue;
+      var dow = new Date(state.year, state.month, d).getDay();
+      opts += '<option value="'+d+'">Día '+d+' · '+WEEKDAY_SHORT[dow]+'</option>';
+    }
+    return opts;
+  }
+
+  function populateReqForm(){
+    if(state.team==='summary') return;
+    var tm = team();
+    var memberOpts = orderedMembers(tm).map(function(p){ return '<option value="'+escapeHtml(p)+'">'+escapeHtml(p)+'</option>'; }).join('');
+    document.getElementById('reqPerson').innerHTML = memberOpts;
+    document.getElementById('reqPersonSwap').innerHTML = memberOpts;
+    document.getElementById('reqColleague').innerHTML = memberOpts;
+    var cSel = document.getElementById('reqCode');
+    var opts = '<option value="">Presencial (quitar código)</option>';
+    VALID_CODES.forEach(function(c){ opts += '<option value="'+c+'">'+c+' · '+escapeHtml(state.config.legend[c].label)+'</option>'; });
+    cSel.innerHTML = opts;
+    var dOpts = dayOptionsHtml();
+    document.getElementById('reqDay').innerHTML = dOpts;
+    document.getElementById('reqDaySwap').innerHTML = dOpts;
+  }
+
+  document.getElementById('reqChangeBtn').onclick = function(){
+    if(state.team==='summary'){ showToast('Elige un equipo antes de pedir un cambio', true); return; }
+    var panel = document.getElementById('reqPanel');
+    panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+  };
+  document.getElementById('reqCancel').onclick = function(){
+    document.getElementById('reqPanel').style.display = 'none';
+  };
+  document.getElementById('reqType').onchange = function(){
+    var type = this.value;
+    document.getElementById('reqFieldsChange').style.display = type==='change' ? 'grid' : 'none';
+    document.getElementById('reqFieldsSwap').style.display = type==='swap' ? 'grid' : 'none';
+  };
+  document.getElementById('reqSubmit').onclick = async function(){
+    var type = document.getElementById('reqType').value;
+    var note = document.getElementById('reqNote').value.trim();
+    var sd = sched();
+    sd.requests = sd.requests || [];
+    if(type==='swap'){
+      var person = document.getElementById('reqPersonSwap').value;
+      var colleague = document.getElementById('reqColleague').value;
+      var day = parseInt(document.getElementById('reqDaySwap').value);
+      if(!person || !colleague){ showToast('Selecciona las dos personas', true); return; }
+      if(person===colleague){ showToast('Elige a alguien distinto como compañero/a', true); return; }
+      if(!day){ showToast('Selecciona un día', true); return; }
+      sd.requests.push({
+        id: 'req:'+Date.now()+':'+Math.random().toString(36).slice(2,7),
+        type: 'swap', person: person, colleague: colleague, day: day, note: note,
+        status: 'pending', requestedAt: new Date().toISOString()
+      });
+    } else {
+      var person2 = document.getElementById('reqPerson').value;
+      var day2 = parseInt(document.getElementById('reqDay').value);
+      var code = document.getElementById('reqCode').value;
+      if(!person2){ showToast('Selecciona una persona', true); return; }
+      if(!day2){ showToast('Selecciona un día', true); return; }
+      if(code==='T' && isInNewHireWindow(team(), person2, state.year, state.month, day2)){
+        showToast(person2+' no puede teletrabajar durante sus primeros 6 meses.', true);
+        return;
+      }
+      sd.requests.push({
+        id: 'req:'+Date.now()+':'+Math.random().toString(36).slice(2,7),
+        type: 'change', person: person2, day: day2, code: code, note: note,
+        status: 'pending', requestedAt: new Date().toISOString()
+      });
+    }
+    await saveSched(state.team);
+    document.getElementById('reqPanel').style.display = 'none';
+    document.getElementById('reqNote').value = '';
+    renderPendingReminder();
+    showToast('Solicitud enviada. A la espera de aprobación.');
+  };
+
+  /* ---------- Export ---------- */
+
+  document.getElementById('exportBtn').onclick = function(){
+    var y=state.year, m=state.month;
+    var rows = [];
+    if(state.team==='summary'){
+      rows.push(['Nombre','Equipo','Teletrabajo','Vacaciones','Presencial'].join(';'));
+      var nDays = daysInMonth(y,m);
+      Object.keys(state.config.teams).forEach(function(teamId){
+        var tm = state.config.teams[teamId], sd = state.schedAll[teamId];
+        orderedMembers(tm).forEach(function(person){
+          var tw=0, vac=0, pres=0;
+          for(var d=1; d<=nDays; d++){
+            if(isWeekend(y,m,d)) continue;
+            var c=(sd.schedule[person]||{})[d]||'';
+            if(c==='T') tw++; else if(c==='V') vac++; else if(c==='') pres++;
+          }
+          rows.push([person, tm.name, tw, vac, pres].join(';'));
+        });
+      });
+    } else {
+      var tm2 = team(), sd2 = sched(); var nDays2 = daysInMonth(y,m);
+      var header = ['Nombre'];
+      for(var d=1; d<=nDays2; d++){ header.push(String(d)); }
+      header.push('TW','VAC');
+      rows.push(header.join(';'));
+      orderedMembers(tm2).forEach(function(person){
+        var row = [person];
+        for(var d=1; d<=nDays2; d++){ row.push((sd2.schedule[person]||{})[d] || ''); }
+        row.push(countCode(sd2,person,'T'), countCode(sd2,person,'V'));
+        rows.push(row.join(';'));
+      });
+    }
+    var blob = new Blob(['\uFEFF'+rows.join('\n')], {type:'text/csv;charset=utf-8;'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'teletrabajo_' + state.team + '_' + monthKey(y,m) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  /* ---------- Init ---------- */
+
+  async function init(){
+    await loadConfig();
+    await migrateStoredData();
+    await loadAllSchedules();
+    await loadMonthEvents();
+    await maybeAutoFillOnLoad();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    updateModeUI();
+    renderAll();
+  }
+
+  init();
+
+})();
+</script>
+</body>
+</html>

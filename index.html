@@ -1786,14 +1786,14 @@
             val = val.trim();
             state.eventNames[day] = state.eventNames[day] || {};
             if(val){ state.eventNames[day][evKey] = val; } else { delete state.eventNames[day][evKey]; }
-            await saveTrialNames();
+            saveTrialNames();
           }
           list.push(evKey);
         }
         if(list.length){ state.monthEvents[day] = list; } else { delete state.monthEvents[day]; }
-        await saveMonthEvents();
         state.currentAlerts = computeAlerts(state.team);
         renderTable(); renderAlerts(); renderInfoLine(); renderEventsBanner();
+        saveMonthEvents();
       });
     });
   }
@@ -1827,11 +1827,13 @@
           var flagNewHire = val==='T' && isInNewHireWindow(team(), person, state.year, state.month, parseInt(day));
           sd.schedule[person] = sd.schedule[person] || {};
           if(val===''){ delete sd.schedule[person][day]; } else { sd.schedule[person][day] = val; }
-          saveSched(state.team).then(function(){
-            state.currentAlerts = computeAlerts(state.team);
-            renderTable(); renderAlerts();
-            if(flagNewHire){ showToast(person+' teletrabaja durante su periodo de nueva incorporación — revisa la incidencia en el panel.', true); }
-          });
+          // Repinta ya mismo con el estado local (ya actualizado) en vez de esperar a que
+          // vuelva la confirmación de guardado por red — en móvil, con más latencia, esa
+          // espera se notaba como que la celda tardaba en responder al toque.
+          state.currentAlerts = computeAlerts(state.team);
+          renderTable(); renderAlerts();
+          var savePromise = saveSched(state.team);
+          if(flagNewHire){ savePromise.then(function(){ showToast(person+' teletrabaja durante su periodo de nueva incorporación — revisa la incidencia en el panel.', true); }); }
         }
         function cancel(){ if(committed) return; committed = true; td.innerHTML = originalHTML; }
 
@@ -1870,25 +1872,25 @@
     panel.innerHTML = html;
 
     panel.querySelectorAll('.alert-btn.approve').forEach(function(btn){
-      btn.onclick = async function(){
+      btn.onclick = function(){
         var id = decAttr(btn.getAttribute('data-id'));
         var detail = decAttr(btn.getAttribute('data-detail'));
         var sd = sched();
         sd.exceptions = sd.exceptions || [];
         sd.exceptions.push({id:id, detail:detail, approvedBy:'Ana', approvedAt:new Date().toISOString()});
-        await saveSched(state.team);
         state.currentAlerts = computeAlerts(state.team);
         renderTable(); renderAlerts();
+        saveSched(state.team);
       };
     });
     panel.querySelectorAll('.alert-btn.revoke').forEach(function(btn){
-      btn.onclick = async function(){
+      btn.onclick = function(){
         var id = decAttr(btn.getAttribute('data-id'));
         var sd = sched();
         sd.exceptions = (sd.exceptions||[]).filter(function(e){return e.id!==id;});
-        await saveSched(state.team);
         state.currentAlerts = computeAlerts(state.team);
         renderTable(); renderAlerts();
+        saveSched(state.team);
       };
     });
   }
@@ -1993,20 +1995,20 @@
           if(req.code===''){ delete sd2.schedule[req.person][req.day]; } else { sd2.schedule[req.person][req.day] = req.code; }
         }
         req.status = 'approved'; req.resolvedAt = new Date().toISOString();
-        await saveSched(state.team);
         state.currentAlerts = computeAlerts(state.team);
         renderTable(); renderAlerts(); renderRequests();
+        saveSched(state.team);
       };
     });
     panel.querySelectorAll('.alert-btn.reject').forEach(function(btn){
-      btn.onclick = async function(){
+      btn.onclick = function(){
         var id = decAttr(btn.getAttribute('data-id'));
         var sd2 = sched();
         var req = (sd2.requests||[]).filter(function(r){return r.id===id;})[0];
         if(!req) return;
         req.status = 'rejected'; req.resolvedAt = new Date().toISOString();
-        await saveSched(state.team);
         renderRequests();
+        saveSched(state.team);
       };
     });
   }

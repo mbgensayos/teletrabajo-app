@@ -1,6 +1,6 @@
 {
-  "name": "Teletrabajo Hematologia UIH",
-  "short_name": "Teletrabajo UIH",
+  "name": "Coordinacion EECC Hematologia - Teletrabajo",
+  "short_name": "EECC Hematologia",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

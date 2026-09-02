@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Teletrabajo · Hematología · Gregorio Marañón</title>
+<title>Coordinación EECC Hematología · Teletrabajo</title>
 
 <!-- ==== PWA: hace que el navegador ofrezca "Instalar app" / "Añadir a pantalla de inicio" ==== -->
 <link rel="manifest" href="manifest.json">
@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Teletrabajo UIH">
+<meta name="apple-mobile-web-app-title" content="EECC Hematología">
 
 <!-- ==== Icono (gota): favicon, miniatura de pestaña y acceso directo ==== -->
 <link rel="icon" href="icons/icon-32.png" sizes="32x32" type="image/png">
@@ -55,9 +55,7 @@
   .masthead{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
     margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--line); }
   .masthead .brand{ display:flex; align-items:center; gap:12px; }
-  .masthead .brand img{ width:48px; height:48px; border-radius:var(--radius-sm); object-fit:cover; box-shadow:var(--shadow-sm); }
-  .masthead .brand .brand-emoji{ width:48px; height:48px; border-radius:var(--radius-sm); background:linear-gradient(135deg, var(--maroon-deep), var(--teal));
-    box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center; font-size:23px; flex-shrink:0; }
+  .masthead .brand .brand-logo{ width:52px; height:52px; object-fit:contain; flex-shrink:0; }
   .masthead h1{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:23px; letter-spacing:-0.01em;
     color:var(--ink); margin:0 0 1px; }
   .masthead .sub{ font-size:11.5px; color:var(--ink-soft); font-weight:500; }
@@ -315,9 +313,10 @@
     overflow:hidden; box-shadow:0 24px 60px -16px rgba(32,73,93,.30), 0 2px 10px rgba(32,73,93,.08); }
   .access-card-top{ background:linear-gradient(135deg, var(--maroon-deep) 0%, var(--teal) 100%);
     padding:30px 26px 22px; text-align:center; }
-  .access-icon{ width:54px; height:54px; margin:0 auto 12px; border-radius:14px; background:rgba(255,255,255,.18);
-    display:flex; align-items:center; justify-content:center; font-size:27px;
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.3); }
+  .access-icon{ width:60px; height:60px; margin:0 auto 12px; border-radius:14px; background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.15); }
+  .access-icon img{ width:80%; height:80%; object-fit:contain; }
   .access-card-top h2{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:18px; color:#fff; margin:0 0 3px; letter-spacing:-.01em; }
   .access-org{ font-size:10.5px; color:rgba(255,255,255,.85); text-transform:uppercase; letter-spacing:.06em; font-weight:500; }
   .access-card-body{ padding:22px 26px 24px; text-align:left; }
@@ -345,7 +344,7 @@
   @media (max-width:640px){
     body{ padding:14px 12px 84px; font-size:14px; }
     .masthead{ gap:10px; margin-bottom:16px; padding-bottom:12px; }
-    .masthead .brand img, .masthead .brand .brand-emoji{ width:38px; height:38px; font-size:18px; border-radius:9px; }
+    .masthead .brand .brand-logo{ width:40px; height:40px; }
     .masthead h1{ font-size:17px; }
     .masthead .sub{ font-size:10px; }
     .mode-toggle{ width:100%; justify-content:space-between; }
@@ -406,9 +405,9 @@
 <div id="accessGate" class="access-gate">
   <div class="access-card">
     <div class="access-card-top">
-      <div class="access-icon" aria-hidden="true">🩸</div>
-      <h2>Teletrabajo · Hematología</h2>
-      <div class="access-org">Unidad de Investigación · H. G. Marañón</div>
+      <div class="access-icon"><img src="icons/logo-mark.png" alt="Logo Unidad de Investigación Hematología"></div>
+      <h2>Coordinación EECC Hematología</h2>
+      <div class="access-org">Teletrabajo</div>
     </div>
     <div class="access-card-body">
       <p class="access-sub">Acceso restringido — introduce tu usuario y PIN</p>
@@ -430,10 +429,10 @@
 
   <div class="masthead">
     <div class="brand">
-      <div class="brand-emoji" aria-hidden="true">🩸</div>
+      <img class="brand-logo" src="icons/logo-mark.png" alt="Logo Unidad de Investigación Hematología">
       <div>
-        <h1>Teletrabajo · Hematología</h1>
-        <div class="sub">Unidad de Investigación · Hospital Gregorio Marañón</div>
+        <h1>Coordinación EECC Hematología</h1>
+        <div class="sub">Teletrabajo</div>
       </div>
     </div>
     <div class="mode-toggle no-print">

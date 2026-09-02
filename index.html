@@ -767,22 +767,23 @@
           ['Tatis Beltre, Elisa','Agudo López, Patricia']
         ],
         // Patrones alternos FIJOS por pareja — no es reparto inteligente/adaptativo (eso es
-        // solo para Coordinadores): cada pareja incompatible alterna semana a semana quién
-        // teletrabaja, así nunca coinciden. Semana A: Lidia/Patricia hacen L+X+V; Javier/Elisa
-        // presenciales. Semana B: Javier/Elisa hacen M+J; Lidia/Patricia presenciales. La
-        // generación automática respeta esto como regla, sin aleatoriedad ni "optimización".
+        // solo para Coordinadores). Dos núcleos independientes (Javier/Lidia y Patricia/Elisa):
+        // cada semana AMBOS de la pareja teletrabajan, pero intercambian qué días — así nunca
+        // coinciden. Semana A: Javier/Patricia hacen L+X+V y Lidia/Elisa hacen M+J. Semana B: se
+        // intercambian los roles. La generación automática respeta esto como regla, sin
+        // aleatoriedad ni "optimización".
         auto:{ type:'per-person', rules:[
-          {person:'Domínguez Parrilla, Lidia', mode:'alt-week', refStart:'2025-12-01', aDays:[1,3,5], bDays:[]},
-          {person:'Millán Carneros, Javier', mode:'alt-week', refStart:'2025-12-01', aDays:[], bDays:[2,4]},
-          {person:'Agudo López, Patricia', mode:'alt-week', refStart:'2025-12-01', aDays:[1,3,5], bDays:[]},
-          {person:'Tatis Beltre, Elisa', mode:'alt-week', refStart:'2025-12-01', aDays:[], bDays:[2,4]}
+          {person:'Millán Carneros, Javier', mode:'alt-week', refStart:'2025-12-01', aDays:[1,3,5], bDays:[2,4]},
+          {person:'Domínguez Parrilla, Lidia', mode:'alt-week', refStart:'2025-12-01', aDays:[2,4], bDays:[1,3,5]},
+          {person:'Agudo López, Patricia', mode:'alt-week', refStart:'2025-12-01', aDays:[1,3,5], bDays:[2,4]},
+          {person:'Tatis Beltre, Elisa', mode:'alt-week', refStart:'2025-12-01', aDays:[2,4], bDays:[1,3,5]}
         ]},
         autoAdaptive:false,
+        // Sin máximos: el patrón alterno de cada pareja (arriba) es la única regla — según el
+        // mes puede dar 10 u 11 días de teletrabajo, y un máximo fijo lo recortaría a mitad de
+        // patrón, que es justo lo que no se quiere.
         maxWeekly:{},
-        maxMonthly:{
-          'Agudo López, Patricia':10, 'Domínguez Parrilla, Lidia':10,
-          'Millán Carneros, Javier':10, 'Tatis Beltre, Elisa':10
-        }
+        maxMonthly:{}
       },
       datas: {
         name:'Data Entry',

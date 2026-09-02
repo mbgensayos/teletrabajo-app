@@ -603,9 +603,19 @@
         </div>
         <div class="help">Ajusta el texto si no coincide con el criterio real de tu servicio, o añade/elimina etiquetas propias. Eliminar una etiqueta no borra los días ya marcados con ese código.</div>
       </div>
+      <div class="card" style="grid-column:1 / -1;">
+        <h3>Calendario laboral (festivos)</h3>
+        <div id="holidayList"></div>
+        <div class="addpair">
+          <input type="date" id="newHolidayDate" style="padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;">
+          <input type="text" id="newHolidayLabel" placeholder="Descripción (ej. festivo local)" style="flex:1;min-width:160px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;">
+          <button id="addHolidayBtn">Añadir festivo</button>
+        </div>
+        <div class="help">Ya incluye los festivos generales y autonómicos de la Comunidad de Madrid para 2026. Añade aquí los 2 festivos locales de tu municipio. Un festivo se trata exactamente igual que un fin de semana: mismo color y no cuenta como día laborable, en ningún equipo.</div>
+      </div>
     </div>
 
-    <div class="help no-print">Clic en una celda (en modo edición) y escribe el código (T, V, P, IM, B o C) — Intro para guardar, Esc para cancelar. Fines de semana bloqueados. Las filas INICIO / FC / REUNIÓN (arriba de la tabla) marcan eventos por día — clic para activar o desactivar cada uno; pueden coincidir varios el mismo día. Sin contraseña solo se pueden ver los datos y pedir cambios con «Solicitar cambio».</div>
+    <div class="help no-print">Clic en una celda (en modo edición) y escribe el código (T, V, P, IM, B o C) — Intro para guardar, Esc para cancelar. Fines de semana y festivos bloqueados. Las filas INICIO / FC / REUNIÓN (arriba de la tabla) marcan eventos por día — clic para activar o desactivar cada uno; pueden coincidir varios el mismo día. Sin contraseña solo se pueden ver los datos y pedir cambios con «Solicitar cambio».</div>
   </div>
 
   <div class="footnote">Los datos se guardan automáticamente y son visibles para cualquier persona que abra esta app. · No sustituye al registro oficial de RRHH.</div>
@@ -697,8 +707,27 @@
   };
   var REMOVED_COORD = ['Aguilar Perea, Verónica', 'García García, Ana María', 'Manzanero Cámara, Patricia'];
 
+  // Calendario laboral oficial de la Comunidad de Madrid. Además de estos festivos
+  // generales/autonómicos, cada municipio tiene 2 festivos locales propios — se añaden
+  // desde Ajustes → Calendario laboral (festivos).
+  var DEFAULT_HOLIDAYS = [
+    {date:'2026-01-01', label:'Año Nuevo'},
+    {date:'2026-01-06', label:'Epifanía del Señor'},
+    {date:'2026-04-02', label:'Jueves Santo'},
+    {date:'2026-04-03', label:'Viernes Santo'},
+    {date:'2026-05-01', label:'Fiesta del Trabajo'},
+    {date:'2026-05-02', label:'Fiesta de la Comunidad de Madrid'},
+    {date:'2026-08-15', label:'Asunción de la Virgen'},
+    {date:'2026-10-12', label:'Fiesta Nacional de España'},
+    {date:'2026-11-02', label:'Todos los Santos (traslado)'},
+    {date:'2026-12-07', label:'Día de la Constitución (traslado)'},
+    {date:'2026-12-08', label:'Inmaculada Concepción'},
+    {date:'2026-12-25', label:'Navidad'}
+  ];
+
   var DEFAULT_CONFIG = {
     editPassword: '',
+    holidays: DEFAULT_HOLIDAYS,
     legend: {
       T:{label:'Teletrabajo'}, V:{label:'Vacaciones'}, P:{label:'Permiso'},
       IM:{label:'Investigator Meeting'}, B:{label:'Baja'}, C:{label:'Cita médica'}
@@ -737,8 +766,18 @@
           ['Domínguez Parrilla, Lidia','Millán Carneros, Javier'],
           ['Tatis Beltre, Elisa','Agudo López, Patricia']
         ],
-        auto:null,
-        autoAdaptive:true,
+        // Patrones alternos FIJOS por pareja — no es reparto inteligente/adaptativo (eso es
+        // solo para Coordinadores): cada pareja incompatible alterna semana a semana quién
+        // teletrabaja, así nunca coinciden. Semana A: Lidia/Patricia hacen L+X+V; Javier/Elisa
+        // presenciales. Semana B: Javier/Elisa hacen M+J; Lidia/Patricia presenciales. La
+        // generación automática respeta esto como regla, sin aleatoriedad ni "optimización".
+        auto:{ type:'per-person', rules:[
+          {person:'Domínguez Parrilla, Lidia', mode:'alt-week', refStart:'2025-12-01', aDays:[1,3,5], bDays:[]},
+          {person:'Millán Carneros, Javier', mode:'alt-week', refStart:'2025-12-01', aDays:[], bDays:[2,4]},
+          {person:'Agudo López, Patricia', mode:'alt-week', refStart:'2025-12-01', aDays:[1,3,5], bDays:[]},
+          {person:'Tatis Beltre, Elisa', mode:'alt-week', refStart:'2025-12-01', aDays:[], bDays:[2,4]}
+        ]},
+        autoAdaptive:false,
         maxWeekly:{},
         maxMonthly:{
           'Agudo López, Patricia':10, 'Domínguez Parrilla, Lidia':10,
@@ -780,6 +819,16 @@
   function monthKey(y,m){ return y + '-' + String(m+1).padStart(2,'0'); }
   function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
   function isWeekend(y,m,d){ var dow = new Date(y,m,d).getDay(); return dow===0||dow===6; }
+  function isoDate(y,m,d){ return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
+  function holidayEntry(y,m,d){
+    var iso = isoDate(y,m,d);
+    return (state.config.holidays||[]).filter(function(h){ return h.date===iso; })[0] || null;
+  }
+  function isHoliday(y,m,d){ return !!holidayEntry(y,m,d); }
+  // Fin de semana o festivo (calendario laboral de la Comunidad de Madrid, ajustable en
+  // Ajustes → Calendario laboral): ambos se tratan igual — mismo color y no laborables,
+  // no cuentan para la planificación de teletrabajo ni para los mínimos de presencialidad.
+  function isNonWorkingDay(y,m,d){ return isWeekend(y,m,d) || isHoliday(y,m,d); }
   function todayISODate(){
     var n = new Date();
     return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
@@ -877,6 +926,20 @@
       if(!tm.maxWeekly) tm.maxWeekly = {};
       if(!tm.maxMonthly) tm.maxMonthly = {};
     });
+    // Migration: calendario laboral de festivos (Comunidad de Madrid) — antes no existía.
+    if(!state.config.holidays){
+      state.config.holidays = JSON.parse(JSON.stringify(DEFAULT_HOLIDAYS));
+      await saveConfig();
+    }
+    // Migration: Gestión pasa de reparto adaptativo (tipo Coordinadores) a patrones alternos
+    // FIJOS por pareja (Javier/Lidia y Patricia/Elisa) — son una regla, no una sugerencia de
+    // distribución, así que no deben generarse con el algoritmo inteligente de Coordinadores.
+    var gestionTm2 = state.config.teams.gestion;
+    if(gestionTm2 && !gestionTm2.auto){
+      gestionTm2.auto = JSON.parse(JSON.stringify(DEFAULT_CONFIG.teams.gestion.auto));
+      gestionTm2.autoAdaptive = false;
+      await saveConfig();
+    }
   }
   async function saveConfig(){
     try{ await window.storage.set('config', JSON.stringify(state.config), true); showToast('Guardado ✓'); }
@@ -1154,7 +1217,7 @@
     });
 
     for(var d=1; d<=nDays; d++){
-      if(isWeekend(y,m,d)) continue;
+      if(isNonWorkingDay(y,m,d)) continue;
       var dow = new Date(y,m,d).getDay();
       var dayEvts = state.monthEvents[d] || [];
       var isInicioDay = dayEvts.indexOf('inicio')>=0;
@@ -1259,7 +1322,7 @@
     }
     var weekMonday = null, weeklyCount = {};
     for(var d=1; d<=nDays; d++){
-      if(isWeekend(y,m,d)) continue;
+      if(isNonWorkingDay(y,m,d)) continue;
       var dow = new Date(y,m,d).getDay();
       var mondayKey = mondayOf(new Date(y,m,d)).getTime();
       if(mondayKey !== weekMonday){
@@ -1357,7 +1420,7 @@
     // configurada entre todos los días laborables, redondeado, mínimo 1.
     var bizDays = [], weekOfMonday = {}, weeksOrder = [];
     for(var dd=1; dd<=nDays; dd++){
-      if(isWeekend(y,m,dd)) continue;
+      if(isNonWorkingDay(y,m,dd)) continue;
       bizDays.push(dd);
       var mk = mondayOf(new Date(y,m,dd)).getTime();
       if(weekOfMonday[mk]===undefined){ weekOfMonday[mk] = weeksOrder.length; weeksOrder.push(mk); }
@@ -1426,7 +1489,7 @@
 
     var weekMonday = null, weeklyCount = {}, weeklyAllowance = {};
     for(var d=1; d<=nDays; d++){
-      if(isWeekend(y,m,d)) continue;
+      if(isNonWorkingDay(y,m,d)) continue;
       var dow = new Date(y,m,d).getDay();
       var mondayKey = mondayOf(new Date(y,m,d)).getTime();
       var weekIdx = weekOfMonday[mondayKey];
@@ -1622,7 +1685,7 @@
     // Estado de hoy con el mismo criterio que las incidencias de mínimo de presencialidad
     // (celda vacía = presencial), solo cuando hoy cae dentro del mes que se está viendo.
     var now = new Date();
-    if(now.getFullYear()===state.year && now.getMonth()===state.month && !isWeekend(state.year,state.month,now.getDate())){
+    if(now.getFullYear()===state.year && now.getMonth()===state.month && !isNonWorkingDay(state.year,state.month,now.getDate())){
       var d0 = now.getDate();
       var dayEvts0 = (state.monthEvents||{})[d0] || [];
       var isInicioDay0 = dayEvts0.indexOf('inicio')>=0;
@@ -1746,17 +1809,18 @@
     html += '<th class="namehead" rowspan="2">Nombre</th>';
     visDays.forEach(function(d){
       var dow = new Date(y,m,d).getDay();
-      var weekend = isWeekend(y,m,d);
+      var weekend = isNonWorkingDay(y,m,d);
       var evts = evtsOf(d);
       var cls = 'daycell'+(weekend?' weekend':'')+(conflictDays[d]&&!weekend?' warnday':'')+(!conflictDays[d]&&exDays[d]&&!weekend?' exday':'')+(evts.length&&!weekend?' dayevent-col':'');
       var evtLabel = evts.map(function(e){return eventLabelWithTrial(e, d);}).join(', ');
-      var title = evts.length ? ' title="'+escapeHtml(evtLabel)+(conflictDays[d]?' · incidencia sin resolver':'')+'"' : (conflictDays[d] ? ' title="Incidencia sin resolver este día"' : (exDays[d] ? ' title="Excepción aprobada este día"' : ''));
+      var hEntryH = weekend ? holidayEntry(y,m,d) : null;
+      var title = evts.length ? ' title="'+escapeHtml(evtLabel)+(conflictDays[d]?' · incidencia sin resolver':'')+'"' : (conflictDays[d] ? ' title="Incidencia sin resolver este día"' : (exDays[d] ? ' title="Excepción aprobada este día"' : (hEntryH ? ' title="Festivo — '+escapeHtml(hEntryH.label)+'"' : '')));
       html += '<th class="'+cls+'"'+title+'><div class="wd">'+WD[dow]+'</div></th>';
     });
     if(showTotals) html += '<th class="totalhead" rowspan="2">TW</th><th class="totalhead" rowspan="2">VAC</th>';
     html += '</tr><tr class="hrow2">';
     visDays.forEach(function(d2){
-      var weekend2 = isWeekend(y,m,d2);
+      var weekend2 = isNonWorkingDay(y,m,d2);
       var evts2 = evtsOf(d2);
       var today2 = isToday(y,m,d2);
       html += '<th class="daycell'+(weekend2?' weekend':'')+(evts2.length&&!weekend2?' dayevent-col':'')+(today2?' todaymark':'')+'"><div class="num">'+d2+'</div></th>';
@@ -1766,7 +1830,7 @@
     EVENT_KEYS.forEach(function(evKey){
       html += '<tr class="event-row"><td class="namecell">'+EVENT_ROW_LABEL[evKey]+'</td>';
       visDays.forEach(function(de){
-        var weekendE = isWeekend(y,m,de);
+        var weekendE = isNonWorkingDay(y,m,de);
         var evts3 = evtsOf(de);
         var isSet = evts3.indexOf(evKey)>=0;
         var editableE = (state.mode==='edit' && !weekendE);
@@ -1783,7 +1847,7 @@
       var isExcluded = excl.indexOf(person)>=0;
       html += '<tr><td class="namecell'+(isExcluded?' excluded':'')+'" title="'+escapeHtml(person)+'">'+(isExcluded?'<span class="crown">★</span>':'')+escapeHtml(person)+'</td>';
       visDays.forEach(function(d){
-        var weekend = isWeekend(y,m,d);
+        var weekend = isNonWorkingDay(y,m,d);
         var code = (sd.schedule[person]||{})[d] || '';
         var editable = (state.mode==='edit' && !weekend);
         var today = isToday(y,m,d);
@@ -1794,10 +1858,12 @@
         var evtLabel4 = evts4.map(function(e){return eventLabelWithTrial(e, d);}).join(', ');
         var display = code ? (ICON[code] || code) : (weekend ? '' : '🏢');
         var customStyle = (code && BUILTIN_CODES.indexOf(code)<0) ? ' style="background:#DCDCDC;color:#333;font-weight:700;"' : '';
+        var hEntry = weekend ? holidayEntry(y,m,d) : null;
+        var nonWorkLabel = hEntry ? ('Festivo — '+hEntry.label) : 'Fin de semana';
         html += '<td class="daycell'+(code?' '+code:' empty'+(weekend?'':' blank'))+(weekend?' weekend':'')+(editable?' editable':'')+(today?' todaycol':'')+(conflict?' conflict':'')+(exok?' exok':'')+(evts4.length&&!weekend?' dayevent-col':'')+'"'
               + customStyle
               + ' data-person="'+encAttr(person)+'" data-day="'+d+'"'
-              + ' title="'+escapeHtml((code? (state.config.legend[code]?state.config.legend[code].label:code) : (weekend?'Fin de semana':'Presencial'))+(conflict?' · incidencia sin resolver':'')+(exok?' · excepción aprobada':'')+(evtLabel4?' · '+evtLabel4:''))+'"'
+              + ' title="'+escapeHtml((code? (state.config.legend[code]?state.config.legend[code].label:code) : (weekend?nonWorkLabel:'Presencial'))+(conflict?' · incidencia sin resolver':'')+(exok?' · excepción aprobada':'')+(evtLabel4?' · '+evtLabel4:''))+'"'
               + '>'+display+'</td>';
       });
       if(showTotals){
@@ -1814,7 +1880,7 @@
     html += '<tr class="onsite-row"><td class="namecell" style="color:#fff;">En centro</td>';
     var counted = countableMembers(tm);
     visDays.forEach(function(d3){
-      if(isWeekend(y,m,d3)){ html += '<td class="daycell weekend">·</td>'; return; }
+      if(isNonWorkingDay(y,m,d3)){ html += '<td class="daycell weekend">·</td>'; return; }
       var used = 0;
       counted.forEach(function(p){ var c=(sd.schedule[p]||{})[d3]||''; if(c) used++; });
       var evts5 = evtsOf(d3);
@@ -2125,7 +2191,7 @@
       orderedMembers(tm).forEach(function(person){
         var tw=0, vac=0, pres=0;
         for(var d=1; d<=nDays; d++){
-          if(isWeekend(y,m,d)) continue;
+          if(isNonWorkingDay(y,m,d)) continue;
           var c = (sd.schedule[person]||{})[d] || '';
           if(c==='T') tw++; else if(c==='V') vac++; else if(c==='') pres++;
         }
@@ -2491,6 +2557,41 @@
       codeInput.value=''; labelInput.value='';
       renderLegend(); renderSettings();
     };
+
+    var hl = document.getElementById('holidayList');
+    hl.innerHTML = '';
+    (state.config.holidays||[]).slice().sort(function(a,b){ return a.date<b.date?-1:(a.date>b.date?1:0); }).forEach(function(h){
+      var row = document.createElement('div');
+      row.className = 'pair-row';
+      var niceDate = new Date(h.date+'T00:00:00').toLocaleDateString('es-ES', {day:'2-digit', month:'short', year:'numeric'});
+      var span = document.createElement('span');
+      span.textContent = niceDate+' — '+h.label;
+      row.appendChild(span);
+      var delBtn = document.createElement('button');
+      delBtn.textContent = '×'; delBtn.title = 'Eliminar festivo';
+      delBtn.onclick = async function(){
+        state.config.holidays = (state.config.holidays||[]).filter(function(x){ return x.date!==h.date; });
+        await saveConfig();
+        state.currentAlerts = computeAlerts(state.team);
+        renderTable(); renderAlerts(); renderInfoLine(); renderSettings();
+      };
+      row.appendChild(delBtn);
+      hl.appendChild(row);
+    });
+    document.getElementById('addHolidayBtn').onclick = async function(){
+      var dateInput = document.getElementById('newHolidayDate');
+      var labelInput2 = document.getElementById('newHolidayLabel');
+      var date = dateInput.value;
+      var label2 = labelInput2.value.trim();
+      if(!date){ showToast('Indica una fecha', true); return; }
+      state.config.holidays = state.config.holidays || [];
+      if(state.config.holidays.some(function(h){ return h.date===date; })){ showToast('Ese día ya está marcado como festivo', true); return; }
+      state.config.holidays.push({date:date, label: label2 || 'Festivo local'});
+      await saveConfig();
+      dateInput.value=''; labelInput2.value='';
+      state.currentAlerts = computeAlerts(state.team);
+      renderTable(); renderAlerts(); renderInfoLine(); renderSettings();
+    };
   }
 
   function refreshAfterAutoEdit(){
@@ -2705,7 +2806,7 @@
     var nDays = daysInMonth(state.year, state.month);
     var opts = '';
     for(var d=1; d<=nDays; d++){
-      if(isWeekend(state.year, state.month, d)) continue;
+      if(isNonWorkingDay(state.year, state.month, d)) continue;
       var dow = new Date(state.year, state.month, d).getDay();
       opts += '<option value="'+d+'">Día '+d+' · '+WEEKDAY_SHORT[dow]+'</option>';
     }
@@ -2798,7 +2899,7 @@
         orderedMembers(tm).forEach(function(person){
           var tw=0, vac=0, pres=0;
           for(var d=1; d<=nDays; d++){
-            if(isWeekend(y,m,d)) continue;
+            if(isNonWorkingDay(y,m,d)) continue;
             var c=(sd.schedule[person]||{})[d]||'';
             if(c==='T') tw++; else if(c==='V') vac++; else if(c==='') pres++;
           }

@@ -342,7 +342,7 @@
   .bottomnav{ display:none; }
 
   @media (max-width:640px){
-    body{ padding:14px 12px 84px; font-size:14px; }
+    body{ padding:14px 12px calc(80px + env(safe-area-inset-bottom, 0px)); font-size:14px; }
     .masthead{ gap:10px; margin-bottom:16px; padding-bottom:12px; }
     .masthead .brand .brand-logo{ width:40px; height:40px; }
     .masthead h1{ font-size:17px; }
@@ -2524,7 +2524,8 @@
 
   async function goToAdjacentMonth(dir){
     state.month += dir; if(state.month<0){ state.month=11; state.year--; } else if(state.month>11){ state.month=0; state.year++; }
-    await loadAllSchedules(); await loadMonthEvents(); await loadTrialNames(); await maybeAutoFillOnLoad();
+    await Promise.all([loadAllSchedules(), loadMonthEvents(), loadTrialNames()]);
+    await maybeAutoFillOnLoad();
   }
   document.getElementById('prevMonth').onclick = async function(){
     if(state.viewMode==='week'){
@@ -2542,7 +2543,8 @@
       return;
     }
     state.month--; if(state.month<0){ state.month=11; state.year--; }
-    await loadAllSchedules(); await loadMonthEvents(); await loadTrialNames(); await maybeAutoFillOnLoad(); renderAll();
+    await Promise.all([loadAllSchedules(), loadMonthEvents(), loadTrialNames()]);
+    await maybeAutoFillOnLoad(); renderAll();
   };
   document.getElementById('nextMonth').onclick = async function(){
     if(state.viewMode==='week'){
@@ -2560,7 +2562,8 @@
       return;
     }
     state.month++; if(state.month>11){ state.month=0; state.year++; }
-    await loadAllSchedules(); await loadMonthEvents(); await loadTrialNames(); await maybeAutoFillOnLoad(); renderAll();
+    await Promise.all([loadAllSchedules(), loadMonthEvents(), loadTrialNames()]);
+    await maybeAutoFillOnLoad(); renderAll();
   };
 
   function setViewMode(mode){
@@ -2735,9 +2738,10 @@
       state.config._migratedDayEvents = true;
       await saveConfig();
     }
-    await loadAllSchedules();
-    await loadMonthEvents();
-    await loadTrialNames();
+    // Estas tres cargas no dependen unas de otras (guardan en trozos de estado distintos),
+    // así que se piden en paralelo en vez de en cadena — en móvil, con más latencia por
+    // cada viaje de red, encadenarlas una detrás de otra se notaba mucho al abrir la app.
+    await Promise.all([loadAllSchedules(), loadMonthEvents(), loadTrialNames()]);
     await maybeAutoFillOnLoad();
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').style.display = 'block';

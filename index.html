@@ -99,7 +99,6 @@
     padding:8px 15px; border-radius:var(--radius-pill); border:1.5px solid var(--line); background:var(--panel);
     color:var(--ink-soft); cursor:pointer; transition:border-color .12s ease, color .12s ease, box-shadow .12s ease; box-shadow:var(--shadow-sm); }
   .pillbtn:hover{ border-color:var(--maroon); color:var(--maroon-deep); box-shadow:var(--shadow); }
-  .pillbtn.on{ background:var(--warn); border-color:var(--warn); color:#fff; }
   .pillbtn.auto{ border-color:var(--teal); color:var(--teal); }
   .pillbtn.clearsel{ border-color:var(--warn); color:var(--warn); }
   .pillbtn.request{ border-color:var(--plum); color:var(--plum); }
@@ -681,7 +680,6 @@
 <script>
 (function(){
 
-  var CODES = ['', 'T', 'V', 'P', 'IM', 'B', 'C'];
   var BUILTIN_CODES = ['T','V','P','IM','B','C'];
   function currentCodes(){ return Object.keys(state.config.legend||{}); }
   var WD = ['D','L','M','X','J','V.','S'];
@@ -689,23 +687,11 @@
   var WEEKDAY_SHORT = {1:'Lun',2:'Mar',3:'Mié',4:'Jue',5:'Vie'};
   var MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   var LEGEND_COLOR = { T:'var(--code-t)', V:'var(--code-v)', P:'var(--plum)', IM:'var(--code-im)', B:'var(--code-b)', C:'var(--teal)' };
-  var ICON = {};
   var AUTO_FROM = { y:2026, m:10 }; // Noviembre 2026 (0-indexed month)
   var EVENT_KEYS = ['inicio', 'formacion', 'reunion'];
   var EVENT_LABELS = { inicio:'Inicio', formacion:'Formación Continuada', reunion:'Reunión' };
   var NAMEABLE_EVENTS = ['inicio', 'formacion'];
   var EVENT_ROW_LABEL = { inicio:'INICIO', formacion:'FC', reunion:'REUNIÓN' };
-
-  // Migración de nombres del equipo de Coordinadores (nombre completo antiguo -> nuevo)
-  var RENAME_MAP_COORD = {
-    'Bañuls García, Mireia': 'Mireia Bañuls',
-    'Mena Sicilia, Eva': 'Eva Mena',
-    'Oviedo Prada, Soraya Lola': 'Soraya Lola',
-    'Sánchez Cano, Sergio': 'Sergio Sánchez',
-    'Martínez Sánchez, Javier Alfonso': 'Javier Alfonso',
-    'Ana': 'Ana García'
-  };
-  var REMOVED_COORD = ['Aguilar Perea, Verónica', 'García García, Ana María', 'Manzanero Cámara, Patricia'];
 
   // Calendario laboral oficial de la Comunidad de Madrid. Además de estos festivos
   // generales/autonómicos, cada municipio tiene 2 festivos locales propios — se añaden
@@ -880,46 +866,6 @@
       state.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
       try{ await window.storage.set('config', JSON.stringify(state.config), true); }catch(e2){}
     }
-    // Migration: older versions had a separate 'jefatura' team for Ana.
-    if(state.config.teams.jefatura){
-      var jef = state.config.teams.jefatura;
-      var coordTeam = state.config.teams.coord;
-      if(coordTeam){
-        coordTeam.excludedFromMin = coordTeam.excludedFromMin || [];
-        (jef.members||[]).forEach(function(p){
-          if(coordTeam.members.indexOf(p)<0) coordTeam.members.push(p);
-          if(coordTeam.excludedFromMin.indexOf(p)<0) coordTeam.excludedFromMin.push(p);
-        });
-      }
-      delete state.config.teams.jefatura;
-      await saveConfig();
-    }
-    // Migration: rename/update Coordinadores roster to the new names (Aug 2026).
-    var coordTm = state.config.teams.coord;
-    if(coordTm){
-      var needsRename = coordTm.members.some(function(p){ return RENAME_MAP_COORD.hasOwnProperty(p) || REMOVED_COORD.indexOf(p)>=0; });
-      if(needsRename){
-        var newMembers = coordTm.members
-          .filter(function(p){ return REMOVED_COORD.indexOf(p)<0; })
-          .map(function(p){ return RENAME_MAP_COORD.hasOwnProperty(p) ? RENAME_MAP_COORD[p] : p; });
-        if(newMembers.indexOf('Natalia Porrero')<0) newMembers.push('Natalia Porrero');
-        coordTm.members = newMembers;
-        coordTm.excludedFromMin = (coordTm.excludedFromMin||[])
-          .map(function(p){ return RENAME_MAP_COORD.hasOwnProperty(p) ? RENAME_MAP_COORD[p] : p; })
-          .filter(function(p){ return REMOVED_COORD.indexOf(p)<0; });
-        if(coordTm.excludedFromMin.indexOf('Ana García')<0) coordTm.excludedFromMin.push('Ana García');
-        coordTm.incompatible = (coordTm.incompatible||[])
-          .map(function(pair){ return [
-            RENAME_MAP_COORD.hasOwnProperty(pair[0]) ? RENAME_MAP_COORD[pair[0]] : pair[0],
-            RENAME_MAP_COORD.hasOwnProperty(pair[1]) ? RENAME_MAP_COORD[pair[1]] : pair[1]
-          ]; })
-          .filter(function(pair){ return newMembers.indexOf(pair[0])>=0 && newMembers.indexOf(pair[1])>=0; });
-        if(!coordTm.newHireRestrictions || !coordTm.newHireRestrictions.length){
-          coordTm.newHireRestrictions = [{person:'Natalia Porrero', startDate: todayISODate()}];
-        }
-        await saveConfig();
-      }
-    }
     if(typeof state.config.editPassword === 'undefined') state.config.editPassword = '';
     state.config.teams && Object.keys(state.config.teams).forEach(function(tid){
       var tm = state.config.teams[tid];
@@ -947,8 +893,8 @@
     catch(e){ showToast('Error al guardar los ajustes', true); }
   }
 
-  // Migración de datos históricos: renombra personas dentro de los horarios guardados de
-  // Coordinadores y extrae los antiguos "dayEvents" por equipo hacia el almacén compartido "events:<mes>".
+  // Migración de datos históricos: extrae los antiguos "dayEvents" por equipo hacia el
+  // almacén compartido "events:<mes>".
   async function migrateStoredData(){
     var teamIds = Object.keys(state.config.teams);
     var eventsByMonth = {};
@@ -963,17 +909,6 @@
           var res = await window.storage.get(key, true);
           var parsed = JSON.parse(res.value);
           var changed = false;
-
-          if(tid==='coord' && parsed.schedule){
-            var newSchedule = {};
-            Object.keys(parsed.schedule).forEach(function(p){
-              if(REMOVED_COORD.indexOf(p)>=0){ changed = true; return; }
-              var np = RENAME_MAP_COORD.hasOwnProperty(p) ? RENAME_MAP_COORD[p] : p;
-              if(np !== p) changed = true;
-              newSchedule[np] = parsed.schedule[p];
-            });
-            parsed.schedule = newSchedule;
-          }
 
           if(parsed.dayEvents && Object.keys(parsed.dayEvents).length){
             var mk = key.split(':')[2];
@@ -1305,6 +1240,16 @@
     var weekCap = (tm.maxWeekly && tm.maxWeekly[person]) || Infinity;
     return (monthCount[person]||0) < monCap && (weeklyCount[person]||0) < weekCap;
   }
+  // ¿Entraría "p" en conflicto con alguien ya elegido hoy (chosenToday), según las parejas
+  // incompatibles del equipo? Única fuente de verdad para esta comprobación durante la
+  // generación automática (fillAutoForTeam y fillAdaptiveCoord la comparten).
+  function incompatibleWithChosen(tm, p, chosenToday){
+    return (tm.incompatible||[]).some(function(pair){
+      if(pair[0]===p && chosenToday.indexOf(pair[1])>=0) return true;
+      if(pair[1]===p && chosenToday.indexOf(pair[0])>=0) return true;
+      return false;
+    });
+  }
 
   function fillAutoForTeam(teamId){
     var tm = state.config.teams[teamId];
@@ -1314,13 +1259,6 @@
     var filled = 0;
     var tCountAlt = {}, monthCount = {};
     tm.members.forEach(function(p){ tCountAlt[p] = countCode(sd, p, 'T'); monthCount[p] = tCountAlt[p]; });
-    function incompatibleWithChosen(p, chosenToday){
-      return (tm.incompatible||[]).some(function(pair){
-        if(pair[0]===p && chosenToday.indexOf(pair[1])>=0) return true;
-        if(pair[1]===p && chosenToday.indexOf(pair[0])>=0) return true;
-        return false;
-      });
-    }
     var weekMonday = null, weeklyCount = {};
     for(var d=1; d<=nDays; d++){
       if(isNonWorkingDay(y,m,d)) continue;
@@ -1343,7 +1281,7 @@
           });
           candidates.sort(function(a,b){ return (tCountAlt[a]||0)-(tCountAlt[b]||0); });
           candidates.forEach(function(person){
-            if(incompatibleWithChosen(person, chosenToday)) return;
+            if(incompatibleWithChosen(tm, person, chosenToday)) return;
             sd.schedule[person] = sd.schedule[person] || {};
             sd.schedule[person][d]='T'; filled++;
             chosenToday.push(person);
@@ -1360,7 +1298,7 @@
           if(rdays.indexOf(dow)>=0 && !sd.schedule[rule.person][d]){
             if(isInNewHireWindow(tm, rule.person, y, m, d)) return;
             if(!underCaps(tm, rule.person, monthCount, weeklyCount)) return;
-            if(incompatibleWithChosen(rule.person, chosenTodayPP)) return;
+            if(incompatibleWithChosen(tm, rule.person, chosenTodayPP)) return;
             sd.schedule[rule.person][d]='T'; filled++;
             chosenTodayPP.push(rule.person);
             monthCount[rule.person] = (monthCount[rule.person]||0)+1;
@@ -1408,14 +1346,6 @@
       prevSd = JSON.parse(prevRes.value);
       counted.forEach(function(p){ tCount[p] += countCode(prevSd, p, 'T'); });
     }catch(e){ /* no hay mes anterior guardado: se arranca solo con el mes actual */ }
-
-    function incompatibleWithChosen(p, chosenToday){
-      return (tm.incompatible||[]).some(function(pair){
-        if(pair[0]===p && chosenToday.indexOf(pair[1])>=0) return true;
-        if(pair[1]===p && chosenToday.indexOf(pair[0])>=0) return true;
-        return false;
-      });
-    }
 
     // Semanas del mes (lunes de cada una, en orden) y tope diario dinámico: cuota total
     // configurada entre todos los días laborables, redondeado, mínimo 1.
@@ -1542,7 +1472,7 @@
 
       var chosenToday = [];
       for(var i=0; i<remaining.length && chosenToday.length<budget; i++){
-        if(!incompatibleWithChosen(remaining[i], chosenToday)) chosenToday.push(remaining[i]);
+        if(!incompatibleWithChosen(tm, remaining[i], chosenToday)) chosenToday.push(remaining[i]);
       }
 
       chosenToday.forEach(function(p){
@@ -1666,9 +1596,8 @@
     currentCodes().forEach(function(c){
       var item = document.createElement('div');
       item.className = 'item';
-      var icon = ICON[c] ? ICON[c]+' ' : '';
       var dotColor = LEGEND_COLOR[c] || '#B3B3B3';
-      item.innerHTML = '<span class="dot" style="background:'+dotColor+'"></span><b>'+icon+c+'</b> · '+escapeHtml(state.config.legend[c].label);
+      item.innerHTML = '<span class="dot" style="background:'+dotColor+'"></span><b>'+c+'</b> · '+escapeHtml(state.config.legend[c].label);
       el.appendChild(item);
     });
     var blank = document.createElement('div');
@@ -1857,7 +1786,7 @@
         var exok = !conflict && exCells[key];
         var evts4 = evtsOf(d);
         var evtLabel4 = evts4.map(function(e){return eventLabelWithTrial(e, d);}).join(', ');
-        var display = code ? (ICON[code] || code) : (weekend ? '' : '🏢');
+        var display = code || (weekend ? '' : '🏢');
         var customStyle = (code && BUILTIN_CODES.indexOf(code)<0) ? ' style="background:#DCDCDC;color:#333;font-weight:700;"' : '';
         var hEntry = weekend ? holidayEntry(y,m,d) : null;
         var nonWorkLabel = hEntry ? ('Festivo — '+hEntry.label) : 'Fin de semana';

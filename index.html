@@ -1250,22 +1250,25 @@
     return filled;
   }
 
-  // Relleno adaptativo genérico (Coordinadores y, ahora, Gestión — cualquier equipo con
-  // autoAdaptive:true). Reparte el teletrabajo a un ritmo constante a lo largo de TODO el
-  // mes en vez de agotar cuotas mensuales en las primeras semanas:
+  // Relleno adaptativo genérico (Coordinadores y Gestión — cualquier equipo con
+  // autoAdaptive:true). Cada semana NATURAL de calendario (lunes-domingo, sin cortarla al
+  // cambiar de mes) se recalcula, para cada persona, cuánto le queda para su máximo mensual
+  // entre las semanas reales que quedan — así el reparto se adapta solo, semana a semana, en
+  // vez de seguir una curva fija con una "ventana de recuperación" al final del mes que
+  // apelotonaba el teletrabajo hacia la mitad y dejaba la última semana casi vacía.
+  // Orden de prioridad, de mayor a menor:
   // 1) nunca incumple incompatibilidades ni restricciones de nueva incorporación
   //    (obligatorio),
-  // 2) nunca baja del mínimo de presenciales del equipo (0 = sin mínimo), ni supera el
-  //    máximo semanal/mensual de nadie (obligatorio),
-  // 3) cada día solo se asignan como mucho ~1-2 T (tope dinámico según cuántas personas
-  //    y cuánta cuota mensual hay, para no concentrar todo al principio),
-  // 4) cada persona con máximo mensual configurado tiene un "ritmo ideal" (cuota÷semanas
-  //    transcurridas) y se prioriza a quien va más retrasado respecto a su ritmo,
-  // 5) empates se rompen por menor total acumulado (incluye el mes anterior, para
-  //    compensar meses) y, si aun así hay empate, al azar — para variar el patrón entre
-  //    personas en vez de repetir siempre la misma combinación.
-  // Mireia (solo en Coordinadores) conserva una pequeña preferencia blanda los martes,
-  // pero no le permite adelantarse a alguien con un retraso de ritmo real.
+  // 2) nunca baja del mínimo de presenciales del equipo (0 = sin mínimo, obligatorio),
+  // 3) nunca supera el máximo semanal de nadie — tope duro, contando también los días del
+  //    mes anterior si la semana natural del día 1 empieza ahí (obligatorio),
+  // 4) nunca supera el máximo mensual de nadie (obligatorio),
+  // 5) dentro de eso, reparte el teletrabajo de forma equilibrada entre semanas (cada
+  //    semana recibe lo que le falta ÷ semanas reales que quedan) y entre días (tope
+  //    diario dinámico ~1-2 personas/día), con variedad real de una generación a otra —
+  //    los empates no se rompen siempre igual.
+  // Mireia (solo en Coordinadores) conserva una pequeña preferencia blanda los martes, que
+  // no le permite adelantarse a alguien con retraso real esta semana.
   async function fillAdaptiveCoord(teamId){
     var tm = state.config.teams[teamId];
     var y=state.year, m=state.month, nDays=daysInMonth(y,m);
@@ -1277,9 +1280,10 @@
     counted.forEach(function(p){ tCount[p] = countCode(sd, p, 'T'); monthCount[p] = tCount[p]; });
 
     var prevY = m===0 ? y-1 : y, prevM = m===0 ? 11 : m-1;
+    var prevSd = null;
     try{
       var prevRes = await window.storage.get('sched:'+teamId+':'+monthKey(prevY,prevM), true);
-      var prevSd = JSON.parse(prevRes.value);
+      prevSd = JSON.parse(prevRes.value);
       counted.forEach(function(p){ tCount[p] += countCode(prevSd, p, 'T'); });
     }catch(e){ /* no hay mes anterior guardado: se arranca solo con el mes actual */ }
 
@@ -1303,24 +1307,63 @@
     var numWeeks = weeksOrder.length || 1;
     var totalDemand = counted.reduce(function(sum,p){ return sum + ((tm.maxMonthly&&tm.maxMonthly[p])||0); }, 0);
     var perDayCap = Math.max(1, Math.round(totalDemand / (bizDays.length||1)));
-    // Ventana de "recuperación" al final del mes: en vez de relajar solo el último día
-    // (que con varias incompatibilidades puede ser matemáticamente insuficiente para que
-    // todos lleguen a su máximo — como mucho una persona de cada pareja incompatible por
-    // día), se relaja el tope de reparto en los últimos días laborables del mes, dando
-    // margen real para que el máximo mensual (prioridad más alta que el reparto uniforme)
-    // se cumpla igualmente.
-    var catchupDays = bizDays.slice(Math.max(0, bizDays.length-12));
 
-    function idealSoFar(p, weekIdx){
-      var cap = tm.maxMonthly && tm.maxMonthly[p];
-      if(!cap) return null;
-      return cap * (weekIdx+1) / numWeeks;
+    // Últimos 2 días laborables de CADA semana (no del mes): un margen final para que quien
+    // se haya quedado corto esa semana concreta (p.ej. por una incompatibilidad) aún pueda
+    // alcanzar su cuota semanal, sin necesitar una ventana ancha de fin de mes que adelante
+    // cupo de semanas futuras y acabe vaciando la última.
+    var bizDaysByWeek = {};
+    bizDays.forEach(function(bd){
+      var wi = weekOfMonday[mondayOf(new Date(y,m,bd)).getTime()];
+      bizDaysByWeek[wi] = bizDaysByWeek[wi] || [];
+      bizDaysByWeek[wi].push(bd);
+    });
+    var weekTailDays = {};
+    Object.keys(bizDaysByWeek).forEach(function(wi){
+      bizDaysByWeek[wi].slice(-2).forEach(function(bd){ weekTailDays[bd] = true; });
+    });
+    // Peso de cada semana según cuántos días laborables tiene realmente en este mes: una
+    // semana partida por el cambio de mes (1-2 días) no puede absorber tanto como una
+    // semana completa de 5, así que no cuenta como una semana entera más al repartir lo
+    // que queda (si no, el resto de semanas se quedarían cortas).
+    var weekWeight = {};
+    Object.keys(bizDaysByWeek).forEach(function(wi){
+      weekWeight[wi] = Math.min(1, bizDaysByWeek[wi].length/5);
+    });
+    function weightedRemainingWeeks(fromWeekIdx){
+      var sum = 0;
+      for(var wi=fromWeekIdx; wi<numWeeks; wi++){ sum += weekWeight[wi]!==undefined ? weekWeight[wi] : 1; }
+      return sum || 1;
     }
-    function priorityOf(p, dow, weekIdx){
-      var ideal = idealSoFar(p, weekIdx);
-      var pr = ideal===null ? -(tCount[p]||0)/10 : (ideal - (monthCount[p]||0));
-      if(teamId==='coord' && dow===2 && p==='Mireia Bañuls') pr += 0.5; // preferencia solo de Coordinadores
-      return pr + Math.random()*0.01; // variar el orden entre ejecuciones cuando hay empate real
+
+    // Si la semana natural del día 1 de este mes empieza en el mes anterior, cuenta los
+    // T's que esa persona ya tenga en la parte de esa semana que cae en el mes previo —
+    // así el máximo semanal es real de calendario y cambiar de mes no lo reinicia.
+    var weekZeroMonday = bizDays.length ? mondayOf(new Date(y,m,bizDays[0])) : null;
+    var prevWeekTCount = {};
+    counted.forEach(function(p){ prevWeekTCount[p] = 0; });
+    if(prevSd && weekZeroMonday && (weekZeroMonday.getMonth()!==m || weekZeroMonday.getFullYear()!==y)){
+      var cursor = new Date(weekZeroMonday);
+      while(cursor.getFullYear()===prevY && cursor.getMonth()===prevM){
+        var cdow = cursor.getDay();
+        if(cdow!==0 && cdow!==6){
+          var cday = cursor.getDate();
+          counted.forEach(function(p){
+            var c = (prevSd.schedule[p]||{})[cday] || '';
+            if(c==='T') prevWeekTCount[p]++;
+          });
+        }
+        cursor.setDate(cursor.getDate()+1);
+      }
+    }
+
+    function priorityOf(p, dow, weekProgress){
+      // weekProgress: 0 (ya cumplió lo que le tocaba esta semana) .. 1 (nada hecho aún).
+      // Sin máximo mensual configurado, se usa el criterio antiguo (menos T's acumuladas
+      // primero) como reserva.
+      var pr = weekProgress===null ? -(tCount[p]||0)/10 : weekProgress;
+      if(teamId==='coord' && dow===2 && p==='Mireia Bañuls') pr += 0.15; // preferencia blanda, solo Coordinadores
+      return pr + Math.random()*0.5; // variedad real entre generaciones, no solo desempate de empates exactos
     }
 
     var weekMonday = null, weeklyCount = {}, weeklyAllowance = {};
@@ -1329,26 +1372,20 @@
       var dow = new Date(y,m,d).getDay();
       var mondayKey = mondayOf(new Date(y,m,d)).getTime();
       var weekIdx = weekOfMonday[mondayKey];
-      var inCatchup = catchupDays.indexOf(d)>=0;
       if(mondayKey !== weekMonday){
         weekMonday = mondayKey; weeklyCount = {};
-        // Cuota de ESTA semana concreta para cada persona: lo que le falta para llegar a
-        // su ritmo ideal acumulado a fecha de fin de esta semana. Es un tope duro (no solo
-        // una preferencia), así nadie agota su mes en las primeras semanas.
+        var remainingWeeks = weightedRemainingWeeks(weekIdx);
+        // Cuota de ESTA semana concreta para cada persona: lo que le queda para su máximo
+        // mensual, repartido entre las semanas reales que quedan (incluida esta). Se
+        // recalcula cada semana a partir del progreso REAL, así que si una semana se quedó
+        // corta (p.ej. por una incompatibilidad) las siguientes compensan solas.
         counted.forEach(function(p){
-          weeklyCount[p]=0;
-          var ideal = idealSoFar(p, weekIdx);
+          weeklyCount[p] = (weekIdx===0) ? (prevWeekTCount[p]||0) : 0;
           var cap = tm.maxMonthly && tm.maxMonthly[p];
-          weeklyAllowance[p] = !cap ? Infinity : Math.max(0, Math.ceil(ideal - monthCount[p]));
-        });
-      }
-      // En la ventana de recuperación no queda margen para seguir compensando más
-      // adelante: si aquí se frenara por ritmo, alguien podría quedarse sin llegar a su
-      // máximo mensual, y ese máximo tiene prioridad sobre el reparto equilibrado.
-      if(inCatchup){
-        counted.forEach(function(p){
-          var cap = tm.maxMonthly && tm.maxMonthly[p];
-          if(cap) weeklyAllowance[p] = Math.max(weeklyAllowance[p]||0, cap - monthCount[p]);
+          if(!cap){ weeklyAllowance[p] = Infinity; return; }
+          var remainingNeed = Math.max(0, cap - monthCount[p]);
+          var idealThisWeek = Math.ceil(remainingNeed / remainingWeeks);
+          weeklyAllowance[p] = Math.min((tm.maxWeekly && tm.maxWeekly[p]) || Infinity, idealThisWeek);
         });
       }
       var dayEvts = state.monthEvents[d] || [];
@@ -1361,10 +1398,10 @@
         if(c===''){ currentPresencial++; } else { alreadySet[p]=true; }
       });
 
-      // En la ventana de recuperación no se limita al tope diario "de reparto": si a
-      // alguien le falta llegar a su máximo mensual, se le da hueco mientras el mínimo
-      // de presenciales lo permita (igual que se relaja weeklyAllowance más arriba).
-      var budget = inCatchup ? (currentPresencial - effectiveMin) : Math.min(currentPresencial - effectiveMin, perDayCap);
+      // En los últimos 2 días laborables de esta semana concreta se destensa el tope
+      // diario "de reparto" (solo el mínimo de presencialidad manda), para que quien
+      // todavía le quede cupo esta semana tenga sitio real donde usarlo.
+      var budget = weekTailDays[d] ? (currentPresencial - effectiveMin) : Math.min(currentPresencial - effectiveMin, perDayCap);
       if(budget<=0) continue;
 
       var remaining = counted.filter(function(p){
@@ -1374,7 +1411,11 @@
       if(!remaining.length) continue;
 
       var priorities = {};
-      remaining.forEach(function(p){ priorities[p] = priorityOf(p, dow, weekIdx); });
+      remaining.forEach(function(p){
+        var wa = weeklyAllowance[p];
+        var weekProgress = (wa===Infinity) ? null : (wa>0 ? (wa - weeklyCount[p])/wa : 0);
+        priorities[p] = priorityOf(p, dow, weekProgress);
+      });
       remaining.sort(function(a,b){ return priorities[b] - priorities[a]; });
 
       var chosenToday = [];

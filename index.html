@@ -211,10 +211,12 @@
   .events-banner{ display:none; background:var(--dayevent); border:1px solid var(--dayevent-ring); border-radius:var(--radius); padding:12px 16px;
     margin-bottom:16px; font-size:12.5px; color:var(--dayevent-text); line-height:1.5; box-shadow:var(--shadow-sm); }
   .events-banner-title{ font-weight:700; margin-bottom:6px; }
-  .events-banner-row{ display:flex; gap:10px; align-items:baseline; padding:6px 0; border-top:1px solid rgba(91,62,130,.15); }
+  .events-banner-row{ display:flex; gap:10px; align-items:flex-start; padding:6px 0; border-top:1px solid rgba(91,62,130,.15); }
   .events-banner-row:first-of-type{ border-top:none; padding-top:2px; }
-  .events-banner-day{ font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:11px; min-width:50px; flex-shrink:0; }
-  .events-banner-desc{ flex:1; }
+  .events-banner-day{ font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:11px; min-width:50px; flex-shrink:0; padding-top:1px; }
+  .events-banner-body{ flex:1; }
+  .events-banner-desc{ display:block; }
+  .events-banner-coord{ display:block; font-size:11.5px; opacity:.8; margin-top:2px; }
 
   .pending-reminder{ display:none; background:var(--pink-wash); border:1px solid var(--plum); border-radius:var(--radius);
     padding:12px 16px; margin-bottom:16px; font-size:12.5px; color:var(--ink); line-height:1.5; box-shadow:var(--shadow-sm); }
@@ -492,6 +494,22 @@
       <div class="req-actions">
         <button class="ghost" id="reqCancel">Cancelar</button>
         <button id="reqSubmit">Enviar solicitud</button>
+      </div>
+    </div>
+
+    <div class="req-panel" id="eventPanel">
+      <h4 id="eventPanelTitle">Detalles del evento</h4>
+      <div class="field">
+        <label id="eventNameLabel">Nombre</label>
+        <input type="text" id="eventNameInput" placeholder="Ej. ZUMA-22">
+      </div>
+      <div class="field">
+        <label>Coordinador principal (opcional)</label>
+        <select id="eventCoordInput"></select>
+      </div>
+      <div class="req-actions">
+        <button class="ghost" id="eventCancel">Cancelar</button>
+        <button id="eventSave">Guardar</button>
       </div>
     </div>
 
@@ -958,12 +976,28 @@
     }catch(e){ showToast('Error al guardar', true); }
   }
 
-  // Formato guardado en 'trials:<mes>': { day: { inicio:'nombre', formacion:'nombre' } }.
-  // Los meses guardados antes de que existiera FC tienen { day: 'nombre' } (solo INICIO,
-  // como texto suelto) — se migra en la lectura sin tocar lo ya guardado.
+  // Formato guardado en 'trials:<mes>': { day: { inicio:{name,coord}, formacion:{name,coord} } }.
+  // Formatos anteriores, migrados en la lectura sin tocar lo ya guardado:
+  //  - { day: { inicio:'nombre', formacion:'nombre' } } (sin coordinador principal)
+  //  - { day: 'nombre' } (solo INICIO, de cuando no existía FC, como texto suelto)
+  function normalizeEventEntry(v){
+    if(typeof v === 'string') return v ? { name:v, coord:'' } : null;
+    if(v && typeof v === 'object'){
+      var name = v.name || '', coord = v.coord || '';
+      return (name || coord) ? { name:name, coord:coord } : null;
+    }
+    return null;
+  }
   function normalizeEventNamesForDay(v){
-    if(typeof v === 'string') return v ? { inicio: v } : {};
-    if(v && typeof v === 'object') return v;
+    if(typeof v === 'string') return v ? { inicio: { name:v, coord:'' } } : {};
+    if(v && typeof v === 'object'){
+      var norm = {};
+      Object.keys(v).forEach(function(k){
+        var entry = normalizeEventEntry(v[k]);
+        if(entry) norm[k] = entry;
+      });
+      return norm;
+    }
     return {};
   }
   async function loadTrialNames(){
@@ -985,8 +1019,9 @@
   // un INICIO o una Formación Continuada con nombre asociado.
   function eventLabelWithTrial(evKey, day){
     var names = state.eventNames && state.eventNames[day];
-    if(NAMEABLE_EVENTS.indexOf(evKey)>=0 && names && names[evKey]){
-      return EVENT_LABELS[evKey] + ' – ' + names[evKey];
+    var entry = names && names[evKey];
+    if(NAMEABLE_EVENTS.indexOf(evKey)>=0 && entry && entry.name){
+      return EVENT_LABELS[evKey] + ' – ' + entry.name;
     }
     return EVENT_LABELS[evKey];
   }
@@ -1145,6 +1180,25 @@
             message:'Teletrabajo incompatible: '+pair[0]+' y '+pair[1], people:[pair[0],pair[1]] });
         }
       });
+
+      // El coordinador principal de un ensayo/evento (INICIO o FC) siempre pertenece a
+      // Coordinadores, así que esta incompatibilidad solo tiene sentido comprobarla contra
+      // el horario de ese equipo: si ese día tiene «T» asignado, entra en conflicto con su
+      // presencia esperada para el ensayo que coordina.
+      if(teamId==='coord'){
+        var namesForDay = state.eventNames[d];
+        NAMEABLE_EVENTS.forEach(function(evKey){
+          if(dayEvts.indexOf(evKey)<0) return;
+          var entry = namesForDay && namesForDay[evKey];
+          if(!entry || !entry.coord) return;
+          var coordCode = (sd.schedule[entry.coord]||{})[d] || '';
+          if(coordCode==='T'){
+            alerts.push({ id:'eventcoord:'+teamId+':'+d+':'+evKey, day:d, type:'eventcoord',
+              message:'Coordinador principal en teletrabajo: '+entry.coord+' coordina "'+(entry.name||EVENT_LABELS[evKey])+'" ('+EVENT_LABELS[evKey]+') este día pero tiene teletrabajo asignado',
+              people:[entry.coord] });
+          }
+        });
+      }
 
       if(tm.auto && hasAnySchedule){
         tm.members.forEach(function(p){
@@ -1600,7 +1654,9 @@
     var rows = '';
     evDays.forEach(function(d){
       state.monthEvents[d].forEach(function(e){
-        rows += '<div class="events-banner-row"><span class="events-banner-day">Día '+d+'</span><span class="events-banner-desc">'+escapeHtml(eventLabelWithTrial(e, d))+'</span></div>';
+        var entry = state.eventNames[d] && state.eventNames[d][e];
+        var coordLine = entry && entry.coord ? '<span class="events-banner-coord">Coordinador principal: '+escapeHtml(entry.coord)+'</span>' : '';
+        rows += '<div class="events-banner-row"><span class="events-banner-day">Día '+d+'</span><div class="events-banner-body"><span class="events-banner-desc">'+escapeHtml(eventLabelWithTrial(e, d))+'</span>'+coordLine+'</div></div>';
       });
     });
     el.innerHTML = '<div class="events-banner-title">📌 Eventos este mes (todas las áreas)</div>' + rows;
@@ -1786,16 +1842,8 @@
           list.splice(idx,1);
         } else {
           if(NAMEABLE_EVENTS.indexOf(evKey)>=0){
-            var promptText = evKey==='inicio'
-              ? 'Nombre del ensayo clínico para este día de INICIO:'
-              : 'Nombre de la formación/actividad para este día de Formación Continuada:';
-            var current = (state.eventNames[day] && state.eventNames[day][evKey]) || '';
-            var val = prompt(promptText, current);
-            if(val===null) return; // cancelado: no se activa el evento
-            val = val.trim();
-            state.eventNames[day] = state.eventNames[day] || {};
-            if(val){ state.eventNames[day][evKey] = val; } else { delete state.eventNames[day][evKey]; }
-            saveTrialNames();
+            openEventPanel(day, evKey);
+            return;
           }
           list.push(evKey);
         }
@@ -1806,6 +1854,51 @@
       });
     });
   }
+
+  // Panel para activar un evento con nombre (INICIO / Formación Continuada): pide el
+  // nombre del ensayo/actividad y, opcionalmente, el coordinador principal (de entre
+  // los miembros de Coordinadores) responsable de ese ensayo ese día.
+  function openEventPanel(day, evKey){
+    var panel = document.getElementById('eventPanel');
+    panel.setAttribute('data-day', day);
+    panel.setAttribute('data-event', evKey);
+    document.getElementById('eventPanelTitle').textContent = evKey==='inicio' ? 'Nuevo día de INICIO' : 'Nueva Formación Continuada';
+    document.getElementById('eventNameLabel').textContent = evKey==='inicio' ? 'Nombre del ensayo clínico' : 'Nombre de la formación/actividad';
+    var current = (state.eventNames[day] && state.eventNames[day][evKey]) || {};
+    var nameInput = document.getElementById('eventNameInput');
+    nameInput.value = current.name || '';
+    var coordSel = document.getElementById('eventCoordInput');
+    var coordMembers = (state.config.teams.coord && state.config.teams.coord.members) || [];
+    coordSel.innerHTML = '<option value="">— Sin asignar —</option>'
+      + coordMembers.map(function(p){ return '<option value="'+encAttr(p)+'">'+escapeHtml(p)+'</option>'; }).join('');
+    coordSel.value = current.coord ? encAttr(current.coord) : '';
+    panel.style.display = 'block';
+    panel.scrollIntoView({block:'nearest'});
+    nameInput.focus();
+  }
+
+  document.getElementById('eventCancel').onclick = function(){
+    document.getElementById('eventPanel').style.display = 'none';
+  };
+  document.getElementById('eventSave').onclick = function(){
+    var panel = document.getElementById('eventPanel');
+    var day = panel.getAttribute('data-day');
+    var evKey = panel.getAttribute('data-event');
+    var name = document.getElementById('eventNameInput').value.trim();
+    var coordRaw = document.getElementById('eventCoordInput').value;
+    var coord = coordRaw ? decAttr(coordRaw) : '';
+    state.eventNames[day] = state.eventNames[day] || {};
+    if(name || coord){ state.eventNames[day][evKey] = {name:name, coord:coord}; }
+    else { delete state.eventNames[day][evKey]; }
+    saveTrialNames();
+    var list = state.monthEvents[day] || [];
+    if(list.indexOf(evKey)<0) list.push(evKey);
+    state.monthEvents[day] = list;
+    panel.style.display = 'none';
+    state.currentAlerts = computeAlerts(state.team);
+    renderTable(); renderAlerts(); renderInfoLine(); renderEventsBanner();
+    saveMonthEvents();
+  };
 
   function bindCellEditing(){
     if(state.mode!=='edit') return;

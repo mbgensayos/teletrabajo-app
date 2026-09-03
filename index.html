@@ -13,7 +13,7 @@
      cada apertura si hay una versión más reciente en el servidor y, si la hay, se recarga solo
      una vez (con un parámetro que evita cualquier caché) para traerla, sin que el usuario tenga
      que borrar y volver a añadir el icono. -->
-<meta name="app-build" content="20260903120000">
+<meta name="app-build" content="20260903130000">
 <script>
 (function(){
   try{
@@ -1108,9 +1108,10 @@
         parsed.exceptions = parsed.exceptions || [];
         parsed.requests = parsed.requests || [];
         parsed.note = parsed.note || '';
+        parsed.generated = !!parsed.generated;
         return [tid, parsed];
       }catch(e){
-        return [tid, {schedule:{}, note:'', exceptions:[], requests:[]}];
+        return [tid, {schedule:{}, note:'', exceptions:[], requests:[], generated:false}];
       }
     }));
     state.schedAll = {};
@@ -1217,15 +1218,12 @@
     var y=state.year, m=state.month, nDays=daysInMonth(y,m);
     var alerts = [];
     var counted = countableMembers(tm);
-    // Si todavía no se ha generado ningún «T» de teletrabajo este mes para las personas que
-    // rigen el patrón automático, no tiene sentido avisar de que "rompe el patrón automático":
-    // aún no hay nada que revisar. Mirar solo si hay ALGÚN código puesto (V/B/C/P...) daría
-    // falsos avisos en cuanto alguien anotase una vacación antes de generar el teletrabajo.
-    var autoPersons = (tm.auto && tm.auto.rules) ? tm.auto.rules.map(function(r){ return r.person; }) : tm.members;
-    var hasAnySchedule = autoPersons.some(function(p){
-      var days = sd.schedule[p] || {};
-      return Object.keys(days).some(function(k){ return days[k]==='T'; });
-    });
+    // Si todavía no se ha ejecutado la generación automática para este mes/equipo, no
+    // tiene sentido avisar de que "rompe el patrón automático": aún no hay nada que revisar.
+    // sd.generated se marca explícitamente al pulsar «Generar planificación automática» (o
+    // al rellenarse en silencio al abrir el mes) — así unas vacaciones anotadas a mano antes
+    // de generar no disparan avisos sobre el resto de días, todavía sin decidir.
+    var hasAnySchedule = !!sd.generated;
 
     for(var d=1; d<=nDays; d++){
       if(isNonWorkingDay(y,m,d)) continue;
@@ -1582,6 +1580,7 @@
     // las reglas, incompatibilidades y límites configurados ahora mismo.
     clearAutoManagedT(state.team);
     var filled = team().autoAdaptive ? await fillAdaptiveCoord(state.team) : fillAutoForTeam(state.team);
+    sched().generated = true;
     await saveSched(state.team);
     showToast('Planificación regenerada desde cero: '+filled+' días de teletrabajo asignados');
     renderAll();
@@ -1592,6 +1591,7 @@
     var sd = sched();
     sd.schedule = {};
     sd.exceptions = [];
+    sd.generated = false;
     await saveSched(state.team);
     state.currentAlerts = computeAlerts(state.team);
     showToast('Selección actual borrada');
@@ -1609,7 +1609,7 @@
       var hasAny = Object.keys(sd.schedule).some(function(p){ return Object.keys(sd.schedule[p]||{}).length>0; });
       if(hasAny) continue;
       var filled = fillAutoForTeam(tid);
-      if(filled>0) await saveSched(tid);
+      if(filled>0){ sd.generated = true; await saveSched(tid); }
     }
   }
 

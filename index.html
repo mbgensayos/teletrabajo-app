@@ -13,7 +13,7 @@
      cada apertura si hay una versión más reciente en el servidor y, si la hay, se recarga solo
      una vez (con un parámetro que evita cualquier caché) para traerla, sin que el usuario tenga
      que borrar y volver a añadir el icono. -->
-<meta name="app-build" content="20260903095520">
+<meta name="app-build" content="20260903120000">
 <script>
 (function(){
   try{
@@ -1217,11 +1217,14 @@
     var y=state.year, m=state.month, nDays=daysInMonth(y,m);
     var alerts = [];
     var counted = countableMembers(tm);
-    // Si todavía no se ha generado/editado ningún día de este mes para el equipo, no
-    // tiene sentido avisar de que "rompe el patrón automático": aún no hay nada que revisar.
-    var hasAnySchedule = tm.members.some(function(p){
+    // Si todavía no se ha generado ningún «T» de teletrabajo este mes para las personas que
+    // rigen el patrón automático, no tiene sentido avisar de que "rompe el patrón automático":
+    // aún no hay nada que revisar. Mirar solo si hay ALGÚN código puesto (V/B/C/P...) daría
+    // falsos avisos en cuanto alguien anotase una vacación antes de generar el teletrabajo.
+    var autoPersons = (tm.auto && tm.auto.rules) ? tm.auto.rules.map(function(r){ return r.person; }) : tm.members;
+    var hasAnySchedule = autoPersons.some(function(p){
       var days = sd.schedule[p] || {};
-      return Object.keys(days).length > 0;
+      return Object.keys(days).some(function(k){ return days[k]==='T'; });
     });
 
     for(var d=1; d<=nDays; d++){

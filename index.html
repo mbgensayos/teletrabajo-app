@@ -5,6 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Coordinación EECC Hematología · Teletrabajo</title>
 
+<!-- ==== Auto-actualización ====
+     IMPORTANTE: cambia este valor (a la fecha/hora actual, cualquier cadena distinta a la
+     anterior sirve) cada vez que despliegues un cambio nuevo. Sin esto, un usuario que tenga
+     la app añadida a la pantalla de inicio del móvil puede quedarse viendo una versión vieja
+     indefinidamente, incluso con las cabeceras de caché puestas — este script comprueba en
+     cada apertura si hay una versión más reciente en el servidor y, si la hay, se recarga solo
+     una vez (con un parámetro que evita cualquier caché) para traerla, sin que el usuario tenga
+     que borrar y volver a añadir el icono. -->
+<meta name="app-build" content="20260903095520">
+<script>
+(function(){
+  try{
+    var CURRENT_BUILD = document.querySelector('meta[name="app-build"]').content;
+    var FLAG = 'reloadedForBuild';
+    fetch(location.pathname, { cache: 'no-store' }).then(function(r){ return r.text(); }).then(function(html){
+      var m = html.match(/<meta name="app-build" content="([^"]+)"/);
+      var latestBuild = m ? m[1] : null;
+      if(!latestBuild || latestBuild===CURRENT_BUILD) return;
+      if(sessionStorage.getItem(FLAG)===latestBuild) return; // ya lo intentamos, evita bucles
+      sessionStorage.setItem(FLAG, latestBuild);
+      location.href = location.pathname + '?v=' + encodeURIComponent(latestBuild);
+    }).catch(function(){ /* si falla la comprobación, se sigue con la versión ya cargada */ });
+  }catch(e){}
+})();
+</script>
+
 <!-- ==== PWA: hace que el navegador ofrezca "Instalar app" / "Añadir a pantalla de inicio" ==== -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2C6E8C">

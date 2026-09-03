@@ -62,11 +62,6 @@
     color:var(--ink); margin:0 0 1px; }
   .masthead .sub{ font-size:11.5px; color:var(--ink-soft); font-weight:500; }
 
-  .home-pill{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:700; letter-spacing:.02em;
-    padding:8px 14px; border-radius:var(--radius-pill); border:1.5px solid var(--line); background:var(--panel);
-    color:var(--ink-soft); cursor:pointer; box-shadow:var(--shadow-sm); transition:border-color .12s ease, color .12s ease; }
-  .home-pill:hover{ border-color:var(--maroon); color:var(--maroon-deep); }
-
   .mode-toggle{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; position:relative; }
   .mode-pill{ font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:600; letter-spacing:.03em;
     padding:10px 18px; border-radius:var(--radius-pill); border:1.5px solid var(--maroon-deep); background:var(--maroon-deep); color:#fff;
@@ -140,6 +135,14 @@
   .legend .item{ display:flex; align-items:center; gap:5px; padding:4px 9px; border-radius:var(--radius-pill); background:var(--panel-soft); }
   .legend .dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,.12); }
   .legend .item b{ color:var(--ink); font-weight:600; }
+
+  /* Barra compacta de semana, repetida justo encima de la tabla — solo en móvil y solo en
+     vista semana, para poder cambiar de semana sin tener que volver a subir a la cabecera. */
+  .week-strip{ display:none; }
+  .week-strip .round{ width:30px; height:30px; border-radius:50%; border:1px solid var(--line);
+    background:var(--panel-soft); color:var(--maroon-deep); font-size:15px; cursor:pointer; display:flex;
+    align-items:center; justify-content:center; flex-shrink:0; }
+  .week-strip-label{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:14.5px; color:var(--ink); text-align:center; }
 
   .tablewrap{ overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); background:var(--panel);
     -webkit-overflow-scrolling:touch; box-shadow:var(--shadow); }
@@ -222,7 +225,10 @@
 
   .events-banner{ display:none; background:var(--dayevent); border:1px solid var(--dayevent-ring); border-radius:var(--radius); padding:12px 16px;
     margin-bottom:16px; font-size:12.5px; color:var(--dayevent-text); line-height:1.5; box-shadow:var(--shadow-sm); }
-  .events-banner-title{ font-weight:700; margin-bottom:6px; }
+  .events-banner-title{ font-weight:700; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;
+    width:100%; border:none; background:none; padding:0; font-family:inherit; font-size:inherit; color:inherit; text-align:left; cursor:default; }
+  .events-banner-chevron{ display:none; }
+  .events-banner-rows{ display:block; }
   .events-banner-row{ display:flex; gap:10px; align-items:flex-start; padding:6px 0; border-top:1px solid rgba(91,62,130,.15); }
   .events-banner-row:first-of-type{ border-top:none; padding-top:2px; }
   .events-banner-day{ font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:11px; min-width:50px; flex-shrink:0; padding-top:1px; }
@@ -388,6 +394,18 @@
 
     .viewtoggle{ order:-1; }
 
+    .week-strip.active{ display:flex; align-items:center; justify-content:center; gap:10px;
+      margin-bottom:10px; padding:8px 10px; background:var(--panel); border:1px solid var(--line);
+      border-radius:var(--radius); box-shadow:var(--shadow-sm); }
+
+    /* Eventos del mes como desplegable: cerrado por defecto, para no ocupar tanto antes
+       de llegar a la tabla. */
+    .events-banner-title{ cursor:pointer; }
+    .events-banner-chevron{ display:inline-block; transition:transform .15s ease; flex-shrink:0; margin-left:8px; }
+    .events-banner-rows{ display:none; }
+    .events-banner.open .events-banner-rows{ display:block; margin-top:8px; }
+    .events-banner.open .events-banner-chevron{ transform:rotate(180deg); }
+
     .access-card{ max-width:100%; border-radius:14px; }
     .access-card-top{ padding:26px 20px 18px; }
     .access-card-body{ padding:20px 20px 22px; }
@@ -461,7 +479,6 @@
       </div>
     </button>
     <div class="mode-toggle no-print">
-      <button class="home-pill no-print" id="homeBtnText" type="button" title="Ir al inicio">🏠 Inicio</button>
       <div class="mode-note" id="modeNote">Modo consulta: se puede ver el calendario y pedir cambios.</div>
       <button class="mode-pill view" id="modeBtn">Modo edición</button>
       <div class="pw-panel" id="pwPanel"></div>
@@ -545,6 +562,12 @@
     <div class="events-banner" id="eventsBanner"></div>
 
     <div class="legend" id="legend"></div>
+
+    <div class="week-strip no-print" id="weekStrip">
+      <button class="round" id="weekStripPrev" title="Semana anterior">‹</button>
+      <div class="week-strip-label" id="weekStripLabel"></div>
+      <button class="round" id="weekStripNext" title="Semana siguiente">›</button>
+    </div>
 
     <div class="tablewrap" id="tablewrap">
       <table id="rosterTable"></table>
@@ -822,7 +845,8 @@
     eventNames: {},
     currentAlerts: [],
     viewMode: 'month',
-    weekAnchorDay: null
+    weekAnchorDay: null,
+    eventsBannerOpen: false
   };
 
   function monthKey(y,m){ return y + '-' + String(m+1).padStart(2,'0'); }
@@ -1603,13 +1627,20 @@
 
   function renderMonthLabel(){
     var el = document.getElementById('monthLabel');
-    if(state.viewMode==='week'){
+    var isWeek = state.viewMode==='week';
+    var label;
+    if(isWeek){
       var days = currentWeekDays();
       var monthLabel = MONTH_NAMES[state.month].slice(0,3).toLowerCase()+'. '+state.year;
-      el.textContent = days.length ? (days[0]===days[days.length-1] ? 'Día '+days[0] : days[0]+'–'+days[days.length-1])+' '+monthLabel : MONTH_NAMES[state.month]+' '+state.year;
+      label = days.length ? (days[0]===days[days.length-1] ? 'Día '+days[0] : days[0]+'–'+days[days.length-1])+' '+monthLabel : MONTH_NAMES[state.month]+' '+state.year;
     } else {
-      el.textContent = MONTH_NAMES[state.month] + ' ' + state.year;
+      label = MONTH_NAMES[state.month] + ' ' + state.year;
     }
+    el.textContent = label;
+    // Barra de semana repetida justo encima de la tabla (solo visible en móvil vía CSS, y
+    // solo tiene sentido en vista semana): mismo texto, para cambiar de semana sin volver arriba.
+    document.getElementById('weekStrip').classList.toggle('active', isWeek);
+    document.getElementById('weekStripLabel').textContent = label;
   }
   function updateViewToggleUI(){
     var mb = document.getElementById('viewMonthBtn'), wb = document.getElementById('viewWeekBtn');
@@ -1667,11 +1698,14 @@
     el.innerHTML = pills.length ? pills.join('') : '<span class="stat-pill muted">Sin reglas específicas para este equipo.</span>';
   }
 
+  // En móvil el título es un desplegable (clic para mostrar/ocultar la lista) para no ocupar
+  // tanto espacio antes de llegar a la tabla; en escritorio se ve siempre entera igual que antes.
   function renderEventsBanner(){
     var el = document.getElementById('eventsBanner');
     var evDays = Object.keys(state.monthEvents||{}).map(Number).filter(function(d){return state.monthEvents[d] && state.monthEvents[d].length;}).sort(function(a,b){return a-b;});
     if(evDays.length===0){ el.style.display='none'; el.innerHTML=''; return; }
     el.style.display = 'block';
+    el.classList.toggle('open', state.eventsBannerOpen);
     var rows = '';
     evDays.forEach(function(d){
       state.monthEvents[d].forEach(function(e){
@@ -1680,7 +1714,12 @@
         rows += '<div class="events-banner-row"><span class="events-banner-day">Día '+d+'</span><div class="events-banner-body"><span class="events-banner-desc">'+escapeHtml(eventLabelWithTrial(e, d))+'</span>'+coordLine+'</div></div>';
       });
     });
-    el.innerHTML = '<div class="events-banner-title">📌 Eventos este mes (todas las áreas)</div>' + rows;
+    el.innerHTML = '<button type="button" class="events-banner-title" id="eventsBannerToggle">📌 Eventos este mes (todas las áreas)<span class="events-banner-chevron" aria-hidden="true">▾</span></button>'
+      + '<div class="events-banner-rows">' + rows + '</div>';
+    document.getElementById('eventsBannerToggle').onclick = function(){
+      state.eventsBannerOpen = !state.eventsBannerOpen;
+      el.classList.toggle('open', state.eventsBannerOpen);
+    };
   }
 
   function renderPendingReminder(){
@@ -2700,7 +2739,9 @@
     await Promise.all([loadAllSchedules(), loadMonthEvents(), loadTrialNames()]);
     await maybeAutoFillOnLoad();
   }
-  document.getElementById('prevMonth').onclick = async function(){
+  // Compartidas por los botones ‹ › de la cabecera y por los de la barra de semana
+  // (repetida justo encima de la tabla en móvil), para no duplicar la lógica.
+  async function goPrevPeriod(){
     if(state.viewMode==='week'){
       var y=state.year, m=state.month, nDays=daysInMonth(y,m);
       var anchor = Math.min(Math.max(state.weekAnchorDay||1, 1), nDays);
@@ -2718,8 +2759,8 @@
     state.month--; if(state.month<0){ state.month=11; state.year--; }
     await Promise.all([loadAllSchedules(), loadMonthEvents(), loadTrialNames()]);
     await maybeAutoFillOnLoad(); renderAll();
-  };
-  document.getElementById('nextMonth').onclick = async function(){
+  }
+  async function goNextPeriod(){
     if(state.viewMode==='week'){
       var y2=state.year, m2=state.month, nDays2=daysInMonth(y2,m2);
       var anchor2 = Math.min(Math.max(state.weekAnchorDay||1, 1), nDays2);
@@ -2737,7 +2778,11 @@
     state.month++; if(state.month>11){ state.month=0; state.year++; }
     await Promise.all([loadAllSchedules(), loadMonthEvents(), loadTrialNames()]);
     await maybeAutoFillOnLoad(); renderAll();
-  };
+  }
+  document.getElementById('prevMonth').onclick = goPrevPeriod;
+  document.getElementById('nextMonth').onclick = goNextPeriod;
+  document.getElementById('weekStripPrev').onclick = goPrevPeriod;
+  document.getElementById('weekStripNext').onclick = goNextPeriod;
 
   function setViewMode(mode){
     if(state.viewMode===mode) return;
@@ -2785,7 +2830,6 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   document.getElementById('homeBtn').onclick = goHome;
-  document.getElementById('homeBtnText').onclick = goHome;
 
   document.getElementById('addMemberBtn').onclick = async function(){
     var input = document.getElementById('newMemberInput');

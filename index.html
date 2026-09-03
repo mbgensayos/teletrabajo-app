@@ -54,11 +54,18 @@
 
   .masthead{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
     margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--line); }
-  .masthead .brand{ display:flex; align-items:center; gap:12px; }
+  .masthead .brand{ display:flex; align-items:center; gap:12px; border:none; background:none; padding:2px; margin:-2px;
+    text-align:left; cursor:pointer; border-radius:var(--radius-sm); transition:background .12s ease; }
+  .masthead .brand:hover{ background:var(--pink-wash); }
   .masthead .brand .brand-logo{ width:52px; height:52px; object-fit:contain; flex-shrink:0; }
   .masthead h1{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:23px; letter-spacing:-0.01em;
     color:var(--ink); margin:0 0 1px; }
   .masthead .sub{ font-size:11.5px; color:var(--ink-soft); font-weight:500; }
+
+  .home-pill{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:700; letter-spacing:.02em;
+    padding:8px 14px; border-radius:var(--radius-pill); border:1.5px solid var(--line); background:var(--panel);
+    color:var(--ink-soft); cursor:pointer; box-shadow:var(--shadow-sm); transition:border-color .12s ease, color .12s ease; }
+  .home-pill:hover{ border-color:var(--maroon); color:var(--maroon-deep); }
 
   .mode-toggle{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; position:relative; }
   .mode-pill{ font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:600; letter-spacing:.03em;
@@ -90,7 +97,9 @@
     background:var(--panel); color:var(--maroon-deep); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center;
     box-shadow:var(--shadow-sm); transition:background .12s ease, box-shadow .12s ease; }
   .monthnav button.round:hover{ background:var(--pink-wash); box-shadow:var(--shadow); }
-  .monthlabel{ font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:15px; min-width:140px; text-align:center; }
+  .monthlabel{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:20px; letter-spacing:-.01em;
+    min-width:170px; text-align:center; color:var(--ink); }
+  .pillbtn.today{ border-color:var(--maroon); color:var(--maroon-deep); font-weight:700; }
   .viewtoggle{ display:flex; gap:2px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-pill); padding:3px; box-shadow:var(--shadow-sm); }
   .viewpill{ font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:700; padding:6px 13px;
     border-radius:var(--radius-pill); border:none; background:transparent; color:var(--ink-soft); cursor:pointer; transition:background .12s ease, color .12s ease; }
@@ -149,7 +158,11 @@
   th.daycell.weekend{ background:#3F7A94; }
   th.daycell.warnday{ background:var(--warn); }
   th.daycell.exday{ background:var(--plum); }
+  /* Marca el lunes de cada semana natural (vista mes) para localizar de un vistazo dónde
+     empieza cada semana, sin necesitar contar columnas. */
+  th.daycell.weekstart{ border-left:2px solid var(--maroon-deep); }
   tbody td{ border-bottom:1px solid var(--line-soft); border-left:1px solid var(--line-soft); }
+  tbody td.weekstart{ border-left:2px solid var(--maroon-deep); }
   td.namecell{ position:sticky; left:0; background:var(--panel); z-index:2; padding:8px 14px;
     font-family:'IBM Plex Sans', sans-serif; font-size:12.5px; font-weight:500; white-space:nowrap;
     overflow:hidden; text-overflow:ellipsis;
@@ -259,6 +272,10 @@
   .settings-toggle:hover{ border-color:var(--maroon); color:var(--ink); box-shadow:var(--shadow); }
   .settings-panel{ margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:900px){ .settings-panel{ grid-template-columns:1fr; } }
+  .back-btn{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; font-weight:700; letter-spacing:.02em;
+    background:transparent; border:1.5px solid var(--line); color:var(--ink-soft); padding:10px 16px; border-radius:var(--radius-pill);
+    cursor:pointer; width:fit-content; transition:border-color .12s ease, color .12s ease; }
+  .back-btn:hover{ border-color:var(--maroon); color:var(--maroon-deep); }
   .card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow-sm); }
   .card h3{ font-family:'Space Grotesk', sans-serif; font-size:13.5px; margin:0 0 12px; color:var(--ink); }
   .member-row{ display:flex; align-items:center; justify-content:space-between; padding:7px 0; font-size:12.5px;
@@ -392,6 +409,8 @@
       font-weight:600; padding:7px 2px; border-radius:var(--radius-sm); cursor:pointer; min-height:52px; }
     .bottomnav-btn .bnicon{ font-size:18px; line-height:1; }
     .bottomnav-btn.active{ color:var(--maroon-deep); background:var(--pink-wash); }
+    .bottomnav-btn.bottomnav-home{ flex:0 0 auto; min-width:48px; position:relative; margin-right:4px;
+      padding-right:8px; border-right:1px solid var(--line); border-radius:0; }
   }
   @media (max-width:400px){
     .masthead h1{ font-size:16px; }
@@ -434,14 +453,15 @@
 <div class="wrap">
 
   <div class="masthead">
-    <div class="brand">
+    <button class="brand" id="homeBtn" type="button" title="Ir al inicio">
       <img class="brand-logo" src="icons/logo-mark.png" alt="Logo Unidad de Investigación Hematología">
       <div>
         <h1>Coordinación EECC Hematología</h1>
         <div class="sub">Teletrabajo</div>
       </div>
-    </div>
+    </button>
     <div class="mode-toggle no-print">
+      <button class="home-pill no-print" id="homeBtnText" type="button" title="Ir al inicio">🏠 Inicio</button>
       <div class="mode-note" id="modeNote">Modo consulta: se puede ver el calendario y pedir cambios.</div>
       <button class="mode-pill view" id="modeBtn">Modo edición</button>
       <div class="pw-panel" id="pwPanel"></div>
@@ -459,9 +479,10 @@
           <button class="viewpill" id="viewMonthBtn">Mes</button>
           <button class="viewpill" id="viewWeekBtn">Semana</button>
         </div>
-        <button class="round" id="prevMonth">‹</button>
+        <button class="round" id="prevMonth" title="Mes/semana anterior">‹</button>
         <div class="monthlabel" id="monthLabel"></div>
-        <button class="round" id="nextMonth">›</button>
+        <button class="round" id="nextMonth" title="Mes/semana siguiente">›</button>
+        <button class="pillbtn today" id="todayBtn" title="Ir al mes y semana actuales">Hoy</button>
         <button class="pillbtn auto" id="autoGenBtn" style="display:none;">↻ Generar planificación automática</button>
         <button class="pillbtn clearsel" id="clearSelBtn" style="display:none;">🗑️ Borrar selección actual</button>
         <button class="pillbtn request" id="reqChangeBtn">✎ Solicitar cambio</button>
@@ -536,6 +557,7 @@
 
     <button class="settings-toggle no-print" id="settingsToggle" style="display:none;">⚙ Ajustes del equipo (miembros, reglas, patrón automático, contraseña, etiquetas)</button>
     <div class="settings-panel no-print" id="settingsPanel" style="display:none;">
+      <button class="back-btn" id="settingsBackBtn" type="button" style="grid-column:1 / -1;">← Volver</button>
       <div class="card">
         <h3>Equipo</h3>
         <div id="memberList"></div>
@@ -1556,9 +1578,15 @@
     sumBtn.onclick = function(){ state.team = 'summary'; renderAll(); };
     el.appendChild(sumBtn);
 
-    // Misma navegación que las pestañas de arriba, en formato barra inferior para móvil.
+    // Misma navegación que las pestañas de arriba, en formato barra inferior para móvil,
+    // con un botón "Inicio" siempre al principio para volver a un estado conocido.
     var bn = document.getElementById('bottomNav');
     bn.innerHTML = '';
+    var homeBn = document.createElement('button');
+    homeBn.className = 'bottomnav-btn bottomnav-home';
+    homeBn.innerHTML = '<span class="bnicon" aria-hidden="true">🏠</span>Inicio';
+    homeBn.onclick = function(){ goHome(); };
+    bn.appendChild(homeBn);
     Object.keys(state.config.teams).forEach(function(tid){
       var b2 = document.createElement('button');
       b2.className = 'bottomnav-btn' + (tid===state.team ? ' active' : '');
@@ -1737,11 +1765,15 @@
 
     var html = '<thead><tr class="hrow1">';
     html += '<th class="namehead" rowspan="2">Nombre</th>';
+    // "weekstart" marca visualmente con un borde más grueso el lunes de cada semana natural
+    // (salvo el primer día visible, donde el borde de la tabla ya cumple esa función) — ayuda
+    // a identificar de un vistazo dónde empieza cada semana dentro del mes.
     visDays.forEach(function(d){
       var dow = new Date(y,m,d).getDay();
       var weekend = isNonWorkingDay(y,m,d);
       var evts = evtsOf(d);
-      var cls = 'daycell'+(weekend?' weekend':'')+(conflictDays[d]&&!weekend?' warnday':'')+(!conflictDays[d]&&exDays[d]&&!weekend?' exday':'')+(evts.length&&!weekend?' dayevent-col':'');
+      var weekStart = state.viewMode!=='week' && dow===1 && d!==visDays[0];
+      var cls = 'daycell'+(weekend?' weekend':'')+(conflictDays[d]&&!weekend?' warnday':'')+(!conflictDays[d]&&exDays[d]&&!weekend?' exday':'')+(evts.length&&!weekend?' dayevent-col':'')+(weekStart?' weekstart':'');
       var evtLabel = evts.map(function(e){return eventLabelWithTrial(e, d);}).join(', ');
       var hEntryH = weekend ? holidayEntry(y,m,d) : null;
       var title = evts.length ? ' title="'+escapeHtml(evtLabel)+(conflictDays[d]?' · incidencia sin resolver':'')+'"' : (conflictDays[d] ? ' title="Incidencia sin resolver este día"' : (exDays[d] ? ' title="Excepción aprobada este día"' : (hEntryH ? ' title="Festivo — '+escapeHtml(hEntryH.label)+'"' : '')));
@@ -1753,7 +1785,9 @@
       var weekend2 = isNonWorkingDay(y,m,d2);
       var evts2 = evtsOf(d2);
       var today2 = isToday(y,m,d2);
-      html += '<th class="daycell'+(weekend2?' weekend':'')+(evts2.length&&!weekend2?' dayevent-col':'')+(today2?' todaymark':'')+'"><div class="num">'+d2+'</div></th>';
+      var dow2 = new Date(y,m,d2).getDay();
+      var weekStart2 = state.viewMode!=='week' && dow2===1 && d2!==visDays[0];
+      html += '<th class="daycell'+(weekend2?' weekend':'')+(evts2.length&&!weekend2?' dayevent-col':'')+(today2?' todaymark':'')+(weekStart2?' weekstart':'')+'"><div class="num">'+d2+'</div></th>';
     });
     html += '</tr></thead><tbody>';
 
@@ -1764,7 +1798,9 @@
         var evts3 = evtsOf(de);
         var isSet = evts3.indexOf(evKey)>=0;
         var editableE = (state.mode==='edit' && !weekendE);
-        html += '<td class="daycell event-cell'+(weekendE?' weekend':'')+(isSet?' set':'')+(editableE?' editable':'')+'"'
+        var dowE = new Date(y,m,de).getDay();
+        var weekStartE = state.viewMode!=='week' && dowE===1 && de!==visDays[0];
+        html += '<td class="daycell event-cell'+(weekendE?' weekend':'')+(isSet?' set':'')+(editableE?' editable':'')+(weekStartE?' weekstart':'')+'"'
               + ' data-day="'+de+'" data-event="'+evKey+'"'
               + (weekendE ? '' : ' title="'+escapeHtml(eventLabelWithTrial(evKey, de))+(isSet?' · activo este día':'')+'"')
               + '>'+(weekendE?'':(isSet?'✓':'—'))+'</td>';
@@ -1790,7 +1826,9 @@
         var customStyle = (code && BUILTIN_CODES.indexOf(code)<0) ? ' style="background:#DCDCDC;color:#333;font-weight:700;"' : '';
         var hEntry = weekend ? holidayEntry(y,m,d) : null;
         var nonWorkLabel = hEntry ? ('Festivo — '+hEntry.label) : 'Fin de semana';
-        html += '<td class="daycell'+(code?' '+code:' empty'+(weekend?'':' blank'))+(weekend?' weekend':'')+(editable?' editable':'')+(today?' todaycol':'')+(conflict?' conflict':'')+(exok?' exok':'')+(evts4.length&&!weekend?' dayevent-col':'')+'"'
+        var dowP = new Date(y,m,d).getDay();
+        var weekStartP = state.viewMode!=='week' && dowP===1 && d!==visDays[0];
+        html += '<td class="daycell'+(code?' '+code:' empty'+(weekend?'':' blank'))+(weekend?' weekend':'')+(editable?' editable':'')+(today?' todaycol':'')+(conflict?' conflict':'')+(exok?' exok':'')+(evts4.length&&!weekend?' dayevent-col':'')+(weekStartP?' weekstart':'')+'"'
               + customStyle
               + ' data-person="'+encAttr(person)+'" data-day="'+d+'"'
               + ' title="'+escapeHtml((code? (state.config.legend[code]?state.config.legend[code].label:code) : (weekend?nonWorkLabel:'Presencial'))+(conflict?' · incidencia sin resolver':'')+(exok?' · excepción aprobada':'')+(evtLabel4?' · '+evtLabel4:''))+'"'
@@ -1810,11 +1848,13 @@
     html += '<tr class="onsite-row"><td class="namecell" style="color:#fff;">En centro</td>';
     var counted = countableMembers(tm);
     visDays.forEach(function(d3){
-      if(isNonWorkingDay(y,m,d3)){ html += '<td class="daycell weekend">·</td>'; return; }
+      var dow3 = new Date(y,m,d3).getDay();
+      var weekStart3 = state.viewMode!=='week' && dow3===1 && d3!==visDays[0];
+      if(isNonWorkingDay(y,m,d3)){ html += '<td class="daycell weekend'+(weekStart3?' weekstart':'')+'">·</td>'; return; }
       var used = 0;
       counted.forEach(function(p){ var c=(sd.schedule[p]||{})[d3]||''; if(c) used++; });
       var evts5 = evtsOf(d3);
-      html += '<td class="daycell'+(evts5.length?' dayevent-col':'')+'">'+(counted.length-used)+'</td>';
+      html += '<td class="daycell'+(evts5.length?' dayevent-col':'')+(weekStart3?' weekstart':'')+'">'+(counted.length-used)+'</td>';
     });
     if(showTotals) html += '<td class="totalcell" style="background:transparent;"></td><td class="totalcell" style="background:transparent;"></td>';
     html += '</tr>';
@@ -2711,10 +2751,41 @@
   document.getElementById('viewMonthBtn').onclick = function(){ setViewMode('month'); };
   document.getElementById('viewWeekBtn').onclick = function(){ setViewMode('week'); };
 
+  // Salta directamente al mes actual (y, en vista semana, a la semana que contiene hoy) —
+  // "Hoy" en la cabecera del calendario.
+  async function goToToday(){
+    var now = new Date();
+    var sameMonth = state.year===now.getFullYear() && state.month===now.getMonth();
+    if(!sameMonth){
+      state.year = now.getFullYear(); state.month = now.getMonth();
+      await Promise.all([loadAllSchedules(), loadMonthEvents(), loadTrialNames()]);
+      await maybeAutoFillOnLoad();
+    }
+    if(state.viewMode==='week') state.weekAnchorDay = now.getDate();
+    renderAll();
+  }
+  document.getElementById('todayBtn').onclick = function(){ goToToday(); };
+
+  function closeSettingsPanel(){
+    document.getElementById('settingsPanel').style.display = 'none';
+  }
   document.getElementById('settingsToggle').onclick = function(){
     var p = document.getElementById('settingsPanel');
     p.style.display = p.style.display==='none' ? 'grid' : 'none';
   };
+  document.getElementById('settingsBackBtn').onclick = closeSettingsPanel;
+
+  // "Inicio": vuelve a un estado conocido desde cualquier punto de la app — cierra
+  // cualquier panel secundario abierto (ajustes, solicitar cambio, evento) y sube arriba
+  // del todo. No cambia de equipo ni de modo: solo despeja el camino de vuelta.
+  function goHome(){
+    closeSettingsPanel();
+    document.getElementById('reqPanel').style.display = 'none';
+    document.getElementById('eventPanel').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  document.getElementById('homeBtn').onclick = goHome;
+  document.getElementById('homeBtnText').onclick = goHome;
 
   document.getElementById('addMemberBtn').onclick = async function(){
     var input = document.getElementById('newMemberInput');
@@ -2861,6 +2932,14 @@
   /* ---------- Init ---------- */
 
   async function init(){
+    // En móvil, la vista mensual completa obliga a hacer scroll horizontal para casi todo:
+    // se arranca en vista semana (más legible, columnas más grandes) — el selector Mes/Semana
+    // sigue ahí para cambiar en cualquier momento, esto solo decide el punto de partida.
+    if(window.innerWidth <= 640){
+      state.viewMode = 'week';
+      var todayStart = new Date();
+      state.weekAnchorDay = (todayStart.getFullYear()===state.year && todayStart.getMonth()===state.month) ? todayStart.getDate() : 1;
+    }
     await loadConfig();
     // migrateStoredData() escanea TODA la colección (todas las plantillas de todos los meses)
     // varias veces — es una migración histórica de un solo uso, no algo a repetir en cada carga.

@@ -51,7 +51,6 @@
 <!-- ==== Firebase (sustituye al almacenamiento interno de Claude) ==== -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
 
 <style>
   :root{
@@ -664,12 +663,6 @@
           <button class="addmember" id="pwChangeBtn" style="border:1.5px solid var(--maroon);background:var(--maroon);color:#fff;border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;height:32px;">Cambiar</button>
         </div>
       </div>
-      <div class="card">
-        <h3>Avisos de solicitudes</h3>
-        <div class="help" style="margin-top:0;">Activa esto en el móvil u ordenador de la persona que deba enterarse al momento cuando alguien pida un cambio (p. ej. la responsable del equipo). Es por dispositivo: actívalo en cada aparato desde el que quiera recibir el aviso.</div>
-        <button class="addmember" id="enableNotifyBtn" style="border:1.5px solid var(--maroon);background:var(--maroon);color:#fff;border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;height:32px;margin-top:8px;">🔔 Activar avisos en este dispositivo</button>
-        <div id="notifyStatus" class="help" style="margin-top:6px;"></div>
-      </div>
       <div class="card" style="grid-column:1 / -1;">
         <h3>Etiquetas de códigos</h3>
         <div id="legendEdit"></div>
@@ -717,11 +710,6 @@
     messagingSenderId: "195039880021",
     appId: "1:195039880021:web:59c628c3519b98969e45dc"
   };
-
-  // Clave VAPID para las notificaciones push (Firebase Console → Configuración del proyecto
-  // → Cloud Messaging → pestaña "Web Push certificates" → "Generate key pair"). Sin esto
-  // rellenado, el botón "Activar avisos de solicitudes" no podrá registrar el dispositivo.
-  var FCM_VAPID_KEY = "TU_CLAVE_VAPID_AQUI";
 
   firebase.initializeApp(firebaseConfig);
   var db = firebase.firestore();
@@ -975,52 +963,6 @@
   async function saveConfig(){
     try{ await window.storage.set('config', JSON.stringify(state.config), true); showToast('Guardado ✓'); }
     catch(e){ showToast('Error al guardar los ajustes', true); }
-  }
-
-  /* ---------- Avisos push de solicitudes de cambio ---------- */
-
-  // Registra el token de FCM de ESTE dispositivo en la lista compartida que lee la Cloud
-  // Function al enviar el aviso. Cada dispositivo que active esto añade su propio token; no
-  // hay cuentas de usuario, así que cualquiera que pulse el botón empieza a recibir avisos.
-  async function enableChangeRequestNotifications(){
-    if(!('Notification' in window) || !('serviceWorker' in navigator)){
-      showToast('Este navegador no admite notificaciones push', true); return;
-    }
-    if(!FCM_VAPID_KEY || FCM_VAPID_KEY.indexOf('TU_CLAVE')===0){
-      showToast('Falta configurar la clave VAPID en el código (ver comentario junto a firebaseConfig)', true);
-      return;
-    }
-    try{
-      var perm = await Notification.requestPermission();
-      if(perm !== 'granted'){ showToast('Permiso de notificaciones denegado', true); return; }
-      var reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-      var messaging = firebase.messaging();
-      var token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: reg });
-      if(!token){ showToast('No se pudo obtener el token de notificaciones', true); return; }
-      var tokens = [];
-      try{ var res = await window.storage.get('pushTokens', true); tokens = JSON.parse(res.value).tokens || []; }catch(e){ tokens = []; }
-      if(tokens.indexOf(token)<0) tokens.push(token);
-      await window.storage.set('pushTokens', JSON.stringify({ tokens: tokens }), true);
-      try{ localStorage.setItem('teletrabajo_notify_token', token); }catch(e){}
-      showToast('Avisos activados en este dispositivo ✓');
-      refreshNotifyStatus();
-    }catch(e){
-      showToast('No se pudo activar: '+e.message, true);
-    }
-  }
-  function refreshNotifyStatus(){
-    var el = document.getElementById('notifyStatus');
-    if(!el) return;
-    var active = false;
-    try{ active = !!localStorage.getItem('teletrabajo_notify_token'); }catch(e){}
-    el.textContent = active ? '✓ Avisos activados en este dispositivo.' : 'Avisos no activados todavía en este dispositivo.';
-  }
-
-  // Aviso ligero (independiente de la solicitud real, que no se toca) que solo existe para
-  // disparar la Cloud Function notifyOnChangeRequest — se autoborra al procesarse.
-  async function pingChangeRequestNotification(summary){
-    try{ await db.collection('notifyQueue').add({ summary: summary, createdAt: new Date().toISOString() }); }
-    catch(e){ /* si falla el aviso push, la solicitud en sí ya se guardó bien: no hacer nada más */ }
   }
 
   // Migración de datos históricos: extrae los antiguos "dayEvents" por equipo hacia el
@@ -2616,9 +2558,6 @@
       showToast('Contraseña actualizada');
     };
 
-    document.getElementById('enableNotifyBtn').onclick = enableChangeRequestNotifications;
-    refreshNotifyStatus();
-
     var le = document.getElementById('legendEdit');
     le.innerHTML = '';
     Object.keys(state.config.legend).forEach(function(code){
@@ -2984,7 +2923,6 @@
     var note = document.getElementById('reqNote').value.trim();
     var sd = sched();
     sd.requests = sd.requests || [];
-    var summary;
     if(type==='swap'){
       var person = document.getElementById('reqPersonSwap').value;
       var colleague = document.getElementById('reqColleague').value;
@@ -2998,7 +2936,6 @@
         type: 'swap', person: person, colleague: colleague, day: day, colleagueDay: colleagueDay, note: note,
         status: 'pending', requestedAt: new Date().toISOString()
       });
-      summary = team().name+': '+person+' y '+colleague+' piden intercambiar los días '+day+' y '+colleagueDay;
     } else {
       var person2 = document.getElementById('reqPerson').value;
       var day2 = parseInt(document.getElementById('reqDay').value);
@@ -3014,10 +2951,8 @@
         type: 'change', person: person2, day: day2, code: code, note: note,
         status: 'pending', requestedAt: new Date().toISOString()
       });
-      summary = team().name+': '+person2+' pide '+(code||'(borrar)')+' el día '+day2;
     }
     await saveSched(state.team);
-    pingChangeRequestNotification(summary);
     document.getElementById('reqPanel').style.display = 'none';
     document.getElementById('reqNote').value = '';
     renderPendingReminder();

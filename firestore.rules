@@ -4,12 +4,5 @@ service cloud.firestore {
     match /teletrabajo/{doc} {
       allow read, write: if true;
     }
-    // Cola de avisos para la Cloud Function que envía la notificación push: el cliente solo
-    // puede crear un aviso (cuando alguien envía una solicitud de cambio), nunca leerlos,
-    // editarlos ni borrarlos — eso lo hace la función con permisos de administrador.
-    match /notifyQueue/{doc} {
-      allow create: if true;
-      allow read, update, delete: if false;
-    }
   }
 }

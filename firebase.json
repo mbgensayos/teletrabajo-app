@@ -2,9 +2,6 @@
   "firestore": {
     "rules": "firestore.rules"
   },
-  "functions": {
-    "source": "functions"
-  },
   "hosting": {
     "public": ".",
     "ignore": [
@@ -12,8 +9,7 @@
       "**/.*",
       "**/.*/**",
       "**/node_modules/**",
-      "firestore.rules",
-      "functions/**"
+      "firestore.rules"
     ],
     "rewrites": [
       {
@@ -36,12 +32,6 @@
       },
       {
         "source": "/index.html",
-        "headers": [
-          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
-        ]
-      },
-      {
-        "source": "/firebase-messaging-sw.js",
         "headers": [
           { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
         ]

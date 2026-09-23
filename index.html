@@ -51,6 +51,8 @@
 <!-- ==== Firebase (sustituye al almacenamiento interno de Claude) ==== -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<!-- ==== EmailJS (envía el aviso por correo al crear una solicitud, sin servidor propio) ==== -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <style>
   :root{
@@ -663,6 +665,15 @@
           <button class="addmember" id="pwChangeBtn" style="border:1.5px solid var(--maroon);background:var(--maroon);color:#fff;border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;height:32px;">Cambiar</button>
         </div>
       </div>
+      <div class="card">
+        <h3>Avisos por email</h3>
+        <div class="help" style="margin-top:0;">Cada dirección de esta lista recibe un correo automático en cuanto alguien envía una «Solicitar cambio», sin necesidad de abrir la app.</div>
+        <div id="notifyEmailList"></div>
+        <div class="addpair">
+          <input type="email" id="newNotifyEmail" placeholder="correo@ejemplo.com" style="flex:1;min-width:160px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;">
+          <button id="addNotifyEmailBtn">Añadir</button>
+        </div>
+      </div>
       <div class="card" style="grid-column:1 / -1;">
         <h3>Etiquetas de códigos</h3>
         <div id="legendEdit"></div>
@@ -710,6 +721,16 @@
     messagingSenderId: "195039880021",
     appId: "1:195039880021:web:59c628c3519b98969e45dc"
   };
+
+  // Configuración de EmailJS (https://www.emailjs.com — cuenta gratuita, sin tarjeta) para
+  // avisar por correo cuando alguien envía una solicitud de cambio. Sigue la guía que te dio
+  // Claude para crear la cuenta, conectar tu email y crear la plantilla; luego sustituye estos
+  // tres valores por los tuyos (Cuenta → General → "Public Key"; Email Services → tu servicio;
+  // Email Templates → tu plantilla).
+  var EMAILJS_PUBLIC_KEY = 'TU_PUBLIC_KEY_AQUI';
+  var EMAILJS_SERVICE_ID = 'TU_SERVICE_ID_AQUI';
+  var EMAILJS_TEMPLATE_ID = 'TU_TEMPLATE_ID_AQUI';
+  try{ if(EMAILJS_PUBLIC_KEY.indexOf('TU_')!==0) emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }catch(e){}
 
   firebase.initializeApp(firebaseConfig);
   var db = firebase.firestore();
@@ -784,6 +805,7 @@
 
   var DEFAULT_CONFIG = {
     editPassword: '',
+    notifyEmails: [],
     holidays: DEFAULT_HOLIDAYS,
     legend: {
       T:{label:'Teletrabajo'}, V:{label:'Vacaciones'}, P:{label:'Permiso'},
@@ -939,6 +961,7 @@
       try{ await window.storage.set('config', JSON.stringify(state.config), true); }catch(e2){}
     }
     if(typeof state.config.editPassword === 'undefined') state.config.editPassword = '';
+    if(!state.config.notifyEmails) state.config.notifyEmails = [];
     state.config.teams && Object.keys(state.config.teams).forEach(function(tid){
       var tm = state.config.teams[tid];
       if(!tm.excludedFromMin) tm.excludedFromMin = [];
@@ -963,6 +986,22 @@
   async function saveConfig(){
     try{ await window.storage.set('config', JSON.stringify(state.config), true); showToast('Guardado ✓'); }
     catch(e){ showToast('Error al guardar los ajustes', true); }
+  }
+
+  // Avisa por email a cada dirección configurada en Ajustes cuando alguien envía una
+  // solicitud de cambio (vía EmailJS, sin servidor propio — ver configuración junto a
+  // firebaseConfig). Si falla el envío, la solicitud en sí ya se guardó bien: no bloquea nada.
+  function sendChangeRequestEmail(summary){
+    var emails = state.config.notifyEmails || [];
+    if(!emails.length) return;
+    if(typeof emailjs==='undefined' || EMAILJS_PUBLIC_KEY.indexOf('TU_')===0) return;
+    emails.forEach(function(email){
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: email,
+        message: summary,
+        app_url: location.origin + location.pathname
+      }).catch(function(err){ console.error('EmailJS error', err); });
+    });
   }
 
   // Migración de datos históricos: extrae los antiguos "dayEvents" por equipo hacia el
@@ -2616,6 +2655,36 @@
       row.appendChild(delBtn);
       hl.appendChild(row);
     });
+    var nel = document.getElementById('notifyEmailList');
+    nel.innerHTML = '';
+    (state.config.notifyEmails||[]).forEach(function(email){
+      var row = document.createElement('div');
+      row.className = 'pair-row';
+      var span = document.createElement('span');
+      span.textContent = email;
+      row.appendChild(span);
+      var delBtn = document.createElement('button');
+      delBtn.textContent = '×'; delBtn.title = 'Quitar de los avisos';
+      delBtn.onclick = async function(){
+        state.config.notifyEmails = (state.config.notifyEmails||[]).filter(function(x){ return x!==email; });
+        await saveConfig();
+        renderSettings();
+      };
+      row.appendChild(delBtn);
+      nel.appendChild(row);
+    });
+    document.getElementById('addNotifyEmailBtn').onclick = async function(){
+      var emailInput = document.getElementById('newNotifyEmail');
+      var email = emailInput.value.trim();
+      if(!email || email.indexOf('@')<0){ showToast('Indica un correo válido', true); return; }
+      state.config.notifyEmails = state.config.notifyEmails || [];
+      if(state.config.notifyEmails.indexOf(email)>=0){ showToast('Ese correo ya está en la lista', true); return; }
+      state.config.notifyEmails.push(email);
+      await saveConfig();
+      emailInput.value = '';
+      renderSettings();
+    };
+
     document.getElementById('addHolidayBtn').onclick = async function(){
       var dateInput = document.getElementById('newHolidayDate');
       var labelInput2 = document.getElementById('newHolidayLabel');
@@ -2936,6 +3005,7 @@
         type: 'swap', person: person, colleague: colleague, day: day, colleagueDay: colleagueDay, note: note,
         status: 'pending', requestedAt: new Date().toISOString()
       });
+      var summary = team().name+': '+person+' y '+colleague+' piden intercambiar los días '+day+' y '+colleagueDay+(note?' — «'+note+'»':'');
     } else {
       var person2 = document.getElementById('reqPerson').value;
       var day2 = parseInt(document.getElementById('reqDay').value);
@@ -2951,8 +3021,10 @@
         type: 'change', person: person2, day: day2, code: code, note: note,
         status: 'pending', requestedAt: new Date().toISOString()
       });
+      var summary = team().name+': '+person2+' pide '+(code||'(quitar código)')+' el día '+day2+(note?' — «'+note+'»':'');
     }
     await saveSched(state.team);
+    sendChangeRequestEmail(summary);
     document.getElementById('reqPanel').style.display = 'none';
     document.getElementById('reqNote').value = '';
     renderPendingReminder();

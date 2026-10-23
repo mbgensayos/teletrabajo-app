@@ -13,7 +13,7 @@
      cada apertura si hay una versión más reciente en el servidor y, si la hay, se recarga solo
      una vez (con un parámetro que evita cualquier caché) para traerla, sin que el usuario tenga
      que borrar y volver a añadir el icono. -->
-<meta name="app-build" content="20260923070000">
+<meta name="app-build" content="20261023073000">
 <script>
 (function(){
   try{
@@ -53,6 +53,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <!-- ==== EmailJS (envía el aviso por correo al crear una solicitud, sin servidor propio) ==== -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<!-- ==== SheetJS (genera el archivo .xlsx de "Exportar Excel" en el propio navegador) ==== -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
   :root{
@@ -67,6 +69,10 @@
     --code-b:#F5B87A; --code-b-text:#6B3D10;
     --warn:#D6483F; --warn-pale:#FCECEA; --warn-line:#F6D2CD; --ok:#2F9463; --ok-pale:#E8F6EF; --ok-line:#C9EADA;
     --dayevent:#EFE6F8; --dayevent-ring:#B79BDB; --dayevent-text:#5B3E82;
+    --event-formacion:#FBE6D2; --event-formacion-ring:#E0A356; --event-formacion-text:#7A4A14;
+    --event-reunion:#D9E8FB; --event-reunion-ring:#6FA3DE; --event-reunion-text:#28527F;
+    --info-pale:#E8F1FB; --info-line:#B9D4EF; --info-text:#28527F;
+    --sc-highlight:#E7B84A;
     --radius-sm:8px; --radius:14px; --radius-lg:20px; --radius-pill:999px;
     --shadow-sm:0 1px 2px rgba(23,52,66,.05);
     --shadow:0 3px 12px rgba(23,52,66,.08), 0 1px 3px rgba(23,52,66,.05);
@@ -232,6 +238,8 @@
   .alert-row.approved{ background:var(--ok-pale); border-left-color:var(--ok); }
   .alert-row.pending{ background:var(--pink-wash); border-left-color:var(--maroon); }
   .alert-row.rejected{ background:transparent; opacity:.6; }
+  .alert-row.info{ background:var(--info-pale); border-left-color:var(--info-line); }
+  .alert-row.info .alert-msg{ color:var(--info-text); }
   .alert-day{ font-family:'IBM Plex Mono', monospace; font-weight:700; color:var(--ink); min-width:52px; }
   .alert-msg{ flex:1; min-width:200px; color:var(--ink); }
   .alert-badge{ font-size:11px; font-weight:700; color:var(--ok); }
@@ -239,6 +247,9 @@
     border-radius:var(--radius-pill); border:1.5px solid var(--maroon-deep); background:var(--maroon-deep); color:#fff; cursor:pointer;
     transition:background .12s ease; white-space:nowrap; }
   .alert-btn.revoke, .alert-btn.reject{ background:transparent; color:var(--warn); border-color:var(--warn); }
+  .alert-approve-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .alert-note-input{ font-size:12px; padding:7px 10px; border:1px solid var(--line); border-radius:8px; min-width:180px; font-family:inherit; }
+  .alert-note{ display:inline-block; margin-top:3px; font-size:11.5px; color:var(--ink-soft); font-style:italic; }
   .history-toggle{ padding:9px 16px; font-size:11.5px; color:var(--ink-soft); cursor:pointer; border-top:1px solid var(--line); background:var(--panel-soft); }
 
   .summary-table{ width:100%; border-collapse:collapse; background:var(--panel); font-family:'IBM Plex Sans',sans-serif; font-size:13px; }
@@ -273,6 +284,27 @@
   td.daycell.dayevent-col:not(.blank):not(.weekend){ box-shadow: inset 0 0 0 3px var(--dayevent-ring); }
   td.daycell.dayevent-col.todaycol{ box-shadow: inset 0 0 0 3px var(--dayevent-ring), inset 0 0 0 1px var(--maroon-deep); }
   tr.onsite-row td.daycell.dayevent-col{ background:var(--dayevent); color:var(--dayevent-text); }
+
+  /* Colores propios para marcar formación (naranja) y reunión (azul) — INICIO conserva el
+     morado por defecto de las reglas .dayevent-col de arriba. Mayor especificidad (dos
+     clases) para que éstas ganen sin tocar las reglas base. */
+  th.daycell.dayevent-col.dayevent-formacion{ background:var(--event-formacion) !important; color:var(--event-formacion-text) !important; }
+  td.daycell.dayevent-col.dayevent-formacion.blank{ background:var(--event-formacion); color:var(--event-formacion-text); }
+  td.daycell.dayevent-col.dayevent-formacion:not(.blank):not(.weekend){ box-shadow: inset 0 0 0 3px var(--event-formacion-ring); }
+  td.daycell.dayevent-col.dayevent-formacion.todaycol{ box-shadow: inset 0 0 0 3px var(--event-formacion-ring), inset 0 0 0 1px var(--maroon-deep); }
+  tr.onsite-row td.daycell.dayevent-col.dayevent-formacion{ background:var(--event-formacion); color:var(--event-formacion-text); }
+  tr.event-row td.daycell.dayevent-formacion.set{ background:var(--event-formacion); color:var(--event-formacion-text); }
+
+  th.daycell.dayevent-col.dayevent-reunion{ background:var(--event-reunion) !important; color:var(--event-reunion-text) !important; }
+  td.daycell.dayevent-col.dayevent-reunion.blank{ background:var(--event-reunion); color:var(--event-reunion-text); }
+  td.daycell.dayevent-col.dayevent-reunion:not(.blank):not(.weekend){ box-shadow: inset 0 0 0 3px var(--event-reunion-ring); }
+  td.daycell.dayevent-col.dayevent-reunion.todaycol{ box-shadow: inset 0 0 0 3px var(--event-reunion-ring), inset 0 0 0 1px var(--maroon-deep); }
+  tr.onsite-row td.daycell.dayevent-col.dayevent-reunion{ background:var(--event-reunion); color:var(--event-reunion-text); }
+  tr.event-row td.daycell.dayevent-reunion.set{ background:var(--event-reunion); color:var(--event-reunion-text); }
+
+  /* Resalte del/de la SC (coordinador/a principal) en su propia celda el día de su INICIO. */
+  td.daycell.sc-assigned{ box-shadow: inset 0 0 0 3px var(--sc-highlight); }
+  td.daycell.sc-assigned.todaycol{ box-shadow: inset 0 0 0 3px var(--sc-highlight), inset 0 0 0 1px var(--maroon-deep); }
 
   tr.event-row td.namecell{ background:var(--pink-wash); font-weight:700; color:var(--maroon-deep); font-family:'IBM Plex Sans', sans-serif; font-size:11px; letter-spacing:.04em; }
   tr.event-row td.daycell{ background:var(--pink-wash); font-size:13px; font-weight:700; color:var(--ink-soft); cursor:default; }
@@ -532,6 +564,7 @@
         <button class="pillbtn clearsel" id="clearSelBtn" style="display:none;">🗑️ Borrar selección actual</button>
         <button class="pillbtn request" id="reqChangeBtn">✎ Solicitar cambio</button>
         <button class="export-btn" id="exportBtn">↓ Exportar CSV</button>
+        <button class="export-btn" id="exportExcelBtn">↓ Exportar Excel</button>
       </div>
     </div>
 
@@ -784,6 +817,14 @@
   var EVENT_LABELS = { inicio:'Inicio', formacion:'Formación Continuada', reunion:'Reunión' };
   var NAMEABLE_EVENTS = ['inicio', 'formacion'];
   var EVENT_ROW_LABEL = { inicio:'INICIO', formacion:'FC', reunion:'REUNIÓN' };
+  // Cuando varios eventos coinciden el mismo día, el color de la columna usa este orden de
+  // prioridad (INICIO es el más determinante clínicamente, por eso gana). INICIO no necesita
+  // clase propia: usa el morado por defecto de las reglas .dayevent-col existentes.
+  function primaryEventType(evts){
+    if(evts.indexOf('formacion')>=0 && evts.indexOf('inicio')<0) return 'formacion';
+    if(evts.indexOf('reunion')>=0 && evts.indexOf('inicio')<0 && evts.indexOf('formacion')<0) return 'reunion';
+    return null;
+  }
 
   // Calendario laboral oficial de la Comunidad de Madrid. Además de estos festivos
   // generales/autonómicos, cada municipio tiene 2 festivos locales propios — se añaden
@@ -798,6 +839,7 @@
     {date:'2026-08-15', label:'Asunción de la Virgen'},
     {date:'2026-10-12', label:'Fiesta Nacional de España'},
     {date:'2026-11-02', label:'Todos los Santos (traslado)'},
+    {date:'2026-11-09', label:'Virgen de la Almudena'},
     {date:'2026-12-07', label:'Día de la Constitución (traslado)'},
     {date:'2026-12-08', label:'Inmaculada Concepción'},
     {date:'2026-12-25', label:'Navidad'}
@@ -971,6 +1013,13 @@
     // Migration: calendario laboral de festivos (Comunidad de Madrid) — antes no existía.
     if(!state.config.holidays){
       state.config.holidays = JSON.parse(JSON.stringify(DEFAULT_HOLIDAYS));
+      await saveConfig();
+    }
+    // Migration: festivo local de Madrid capital (Virgen de la Almudena) añadido a posteriori —
+    // las instalaciones que ya tenían guardado su propio calendario de festivos no lo reciben
+    // solo por actualizar el código, así que se añade aquí si falta.
+    if(!state.config.holidays.some(function(h){ return h.date==='2026-11-09'; })){
+      state.config.holidays.push({date:'2026-11-09', label:'Virgen de la Almudena'});
       await saveConfig();
     }
     // Migration: Gestión pasa de reparto adaptativo (tipo Coordinadores) a patrones alternos
@@ -1309,6 +1358,15 @@
               people:[entry.coord] });
           }
         });
+        // Aviso informativo (no es una incidencia a aprobar): recuerda, cada vez que alguien
+        // abra el mes, quién es el/la SC de un INICIO ese día — su casilla además queda
+        // resaltada en la tabla (clase sc-assigned).
+        var inicioEntryInfo = namesForDay && namesForDay.inicio;
+        if(dayEvts.indexOf('inicio')>=0 && inicioEntryInfo && inicioEntryInfo.coord){
+          alerts.push({ id:'inicio-info:'+teamId+':'+d, day:d, type:'inicio-info',
+            message: inicioEntryInfo.coord+' es coordinador/a principal de «'+(inicioEntryInfo.name||'este INICIO')+'» este día',
+            people:[inicioEntryInfo.coord] });
+        }
       }
 
       if(tm.auto && hasAnySchedule){
@@ -1338,6 +1396,7 @@
       var ex = exceptions.filter(function(e){return e.id===a.id;})[0];
       a.approved = !!ex;
       a.approvedAt = ex ? ex.approvedAt : null;
+      a.note = ex ? ex.note : null;
     });
     return alerts;
   }
@@ -1880,7 +1939,8 @@
       var weekend = isNonWorkingDay(y,m,d);
       var evts = evtsOf(d);
       var weekStart = state.viewMode!=='week' && dow===1 && d!==visDays[0];
-      var cls = 'daycell'+(weekend?' weekend':'')+(conflictDays[d]&&!weekend?' warnday':'')+(!conflictDays[d]&&exDays[d]&&!weekend?' exday':'')+(evts.length&&!weekend?' dayevent-col':'')+(weekStart?' weekstart':'');
+      var evtType = primaryEventType(evts);
+      var cls = 'daycell'+(weekend?' weekend':'')+(conflictDays[d]&&!weekend?' warnday':'')+(!conflictDays[d]&&exDays[d]&&!weekend?' exday':'')+(evts.length&&!weekend?' dayevent-col'+(evtType?' dayevent-'+evtType:''):'')+(weekStart?' weekstart':'');
       var evtLabel = evts.map(function(e){return eventLabelWithTrial(e, d);}).join(', ');
       var hEntryH = weekend ? holidayEntry(y,m,d) : null;
       var title = evts.length ? ' title="'+escapeHtml(evtLabel)+(conflictDays[d]?' · incidencia sin resolver':'')+'"' : (conflictDays[d] ? ' title="Incidencia sin resolver este día"' : (exDays[d] ? ' title="Excepción aprobada este día"' : (hEntryH ? ' title="Festivo — '+escapeHtml(hEntryH.label)+'"' : '')));
@@ -1894,7 +1954,7 @@
       var today2 = isToday(y,m,d2);
       var dow2 = new Date(y,m,d2).getDay();
       var weekStart2 = state.viewMode!=='week' && dow2===1 && d2!==visDays[0];
-      html += '<th class="daycell'+(weekend2?' weekend':'')+(evts2.length&&!weekend2?' dayevent-col':'')+(today2?' todaymark':'')+(weekStart2?' weekstart':'')+'"><div class="num">'+d2+'</div></th>';
+      html += '<th class="daycell'+(weekend2?' weekend':'')+(evts2.length&&!weekend2?' dayevent-col'+(primaryEventType(evts2)?' dayevent-'+primaryEventType(evts2):''):'')+(today2?' todaymark':'')+(weekStart2?' weekstart':'')+'"><div class="num">'+d2+'</div></th>';
     });
     html += '</tr></thead><tbody>';
 
@@ -1907,7 +1967,7 @@
         var editableE = (state.mode==='edit' && !weekendE);
         var dowE = new Date(y,m,de).getDay();
         var weekStartE = state.viewMode!=='week' && dowE===1 && de!==visDays[0];
-        html += '<td class="daycell event-cell'+(weekendE?' weekend':'')+(isSet?' set':'')+(editableE?' editable':'')+(weekStartE?' weekstart':'')+'"'
+        html += '<td class="daycell event-cell'+(weekendE?' weekend':'')+(isSet?' set'+(evKey!=='inicio'?' dayevent-'+evKey:''):'')+(editableE?' editable':'')+(weekStartE?' weekstart':'')+'"'
               + ' data-day="'+de+'" data-event="'+evKey+'"'
               + (weekendE ? '' : ' title="'+escapeHtml(eventLabelWithTrial(evKey, de))+(isSet?' · activo este día':'')+'"')
               + '>'+(weekendE?'':(isSet?'✓':'—'))+'</td>';
@@ -1929,16 +1989,19 @@
         var exok = !conflict && exCells[key];
         var evts4 = evtsOf(d);
         var evtLabel4 = evts4.map(function(e){return eventLabelWithTrial(e, d);}).join(', ');
+        var evtType4 = primaryEventType(evts4);
+        var inicioEntry = state.eventNames[d] && state.eventNames[d].inicio;
+        var isScDay = evts4.indexOf('inicio')>=0 && inicioEntry && inicioEntry.coord===person;
         var display = code || (weekend ? '' : '🏢');
         var customStyle = (code && BUILTIN_CODES.indexOf(code)<0) ? ' style="background:#DCDCDC;color:#333;font-weight:700;"' : '';
         var hEntry = weekend ? holidayEntry(y,m,d) : null;
         var nonWorkLabel = hEntry ? ('Festivo — '+hEntry.label) : 'Fin de semana';
         var dowP = new Date(y,m,d).getDay();
         var weekStartP = state.viewMode!=='week' && dowP===1 && d!==visDays[0];
-        html += '<td class="daycell'+(code?' '+code:' empty'+(weekend?'':' blank'))+(weekend?' weekend':'')+(editable?' editable':'')+(today?' todaycol':'')+(conflict?' conflict':'')+(exok?' exok':'')+(evts4.length&&!weekend?' dayevent-col':'')+(weekStartP?' weekstart':'')+'"'
+        html += '<td class="daycell'+(code?' '+code:' empty'+(weekend?'':' blank'))+(weekend?' weekend':'')+(editable?' editable':'')+(today?' todaycol':'')+(conflict?' conflict':'')+(exok?' exok':'')+(evts4.length&&!weekend?' dayevent-col'+(evtType4?' dayevent-'+evtType4:''):'')+(isScDay?' sc-assigned':'')+(weekStartP?' weekstart':'')+'"'
               + customStyle
               + ' data-person="'+encAttr(person)+'" data-day="'+d+'"'
-              + ' title="'+escapeHtml((code? (state.config.legend[code]?state.config.legend[code].label:code) : (weekend?nonWorkLabel:'Presencial'))+(conflict?' · incidencia sin resolver':'')+(exok?' · excepción aprobada':'')+(evtLabel4?' · '+evtLabel4:''))+'"'
+              + ' title="'+escapeHtml((code? (state.config.legend[code]?state.config.legend[code].label:code) : (weekend?nonWorkLabel:'Presencial'))+(conflict?' · incidencia sin resolver':'')+(exok?' · excepción aprobada':'')+(evtLabel4?' · '+evtLabel4:'')+(isScDay?' · ★ Coordinador/a principal de este INICIO':''))+'"'
               + '>'+display+'</td>';
       });
       if(showTotals){
@@ -1961,7 +2024,7 @@
       var used = 0;
       counted.forEach(function(p){ var c=(sd.schedule[p]||{})[d3]||''; if(c) used++; });
       var evts5 = evtsOf(d3);
-      html += '<td class="daycell'+(evts5.length?' dayevent-col':'')+(weekStart3?' weekstart':'')+'">'+(counted.length-used)+'</td>';
+      html += '<td class="daycell'+(evts5.length?' dayevent-col'+(primaryEventType(evts5)?' dayevent-'+primaryEventType(evts5):''):'')+(weekStart3?' weekstart':'')+'">'+(counted.length-used)+'</td>';
     });
     if(showTotals) html += '<td class="totalcell" style="background:transparent;"></td><td class="totalcell" style="background:transparent;"></td>';
     html += '</tr>';
@@ -2041,6 +2104,9 @@
     state.currentAlerts = computeAlerts(state.team);
     renderTable(); renderAlerts(); renderInfoLine(); renderEventsBanner();
     saveMonthEvents();
+    if(evKey==='inicio' && coord){
+      showToast('Aviso: '+coord+' es coordinador/a principal de "'+(name||'este INICIO')+'" el día '+day+' — su casilla queda resaltada ese día.');
+    }
   };
 
   function bindCellEditing(){
@@ -2101,16 +2167,35 @@
       panel.innerHTML = '<h3>Incidencias — '+MONTH_NAMES[state.month]+' '+state.year+'</h3><div class="panel-empty">✓ Sin incidencias este mes para '+team().name+'.</div>';
       return;
     }
-    var html = '<h3>Incidencias — '+MONTH_NAMES[state.month]+' '+state.year+' ('+alerts.length+')</h3>';
+    // Los avisos informativos (p.ej. "X es SC de este INICIO") no son incidencias a resolver,
+    // así que no cuentan en el número del título ni muestran botón de aprobar/revocar.
+    var realAlerts = alerts.filter(function(a){ return a.type!=='inicio-info'; });
+    var html = '<h3>Incidencias — '+MONTH_NAMES[state.month]+' '+state.year+' ('+realAlerts.length+')</h3>';
+    if(realAlerts.length===0){
+      html += '<div class="panel-empty">✓ Sin incidencias este mes para '+team().name+'.</div>';
+    }
     alerts.forEach(function(a){
-      html += '<div class="alert-row '+(a.approved?'approved':'active')+'">';
+      var rowClass = a.type==='inicio-info' ? 'info' : (a.approved?'approved':'active');
+      html += '<div class="alert-row '+rowClass+'">';
       html += '<span class="alert-day">Día '+a.day+'</span>';
-      html += '<span class="alert-msg">'+escapeHtml(a.message)+'</span>';
-      if(a.approved){
+      html += '<span class="alert-msg">'+escapeHtml(a.message)+(a.approved && a.note ? '<br><span class="alert-note">Observaciones: '+escapeHtml(a.note)+'</span>' : '')+'</span>';
+      if(a.type==='inicio-info'){
+        // informativo: no requiere aprobación, solo avisa.
+      } else if(a.approved){
         html += '<span class="alert-badge">✓ Excepción aprobada'+(a.approvedAt?' · '+new Date(a.approvedAt).toLocaleDateString('es-ES'):'')+'</span>';
         if(state.mode==='edit'){ html += '<button class="alert-btn revoke" data-id="'+encAttr(a.id)+'">Revocar</button>'; }
       } else if(state.mode==='edit'){
-        html += '<button class="alert-btn approve" data-id="'+encAttr(a.id)+'" data-detail="'+encAttr(a.message)+'">Aprobar excepción</button>';
+        // Para incompatibilidad de teletrabajo entre dos coordinadores, deja anotar el motivo
+        // de la excepción (p.ej. "autorizado por X para la visita de monitorización") antes de
+        // aprobarla — el resto de tipos de incidencia se aprueban igual que siempre, sin este paso.
+        if(a.type==='incompat'){
+          html += '<div class="alert-approve-row">'
+                + '<input type="text" class="alert-note-input" placeholder="Observaciones (opcional)" maxlength="300">'
+                + '<button class="alert-btn approve" data-id="'+encAttr(a.id)+'" data-detail="'+encAttr(a.message)+'">Aprobar excepción</button>'
+                + '</div>';
+        } else {
+          html += '<button class="alert-btn approve" data-id="'+encAttr(a.id)+'" data-detail="'+encAttr(a.message)+'">Aprobar excepción</button>';
+        }
       }
       html += '</div>';
     });
@@ -2120,9 +2205,13 @@
       btn.onclick = function(){
         var id = decAttr(btn.getAttribute('data-id'));
         var detail = decAttr(btn.getAttribute('data-detail'));
+        var noteInput = btn.parentElement.querySelector('.alert-note-input');
+        var note = noteInput ? noteInput.value.trim() : '';
         var sd = sched();
         sd.exceptions = sd.exceptions || [];
-        sd.exceptions.push({id:id, detail:detail, approvedBy:'Ana', approvedAt:new Date().toISOString()});
+        var exc = {id:id, detail:detail, approvedBy:'Ana', approvedAt:new Date().toISOString()};
+        if(note) exc.note = note;
+        sd.exceptions.push(exc);
         state.currentAlerts = computeAlerts(state.team);
         renderTable(); renderAlerts();
         saveSched(state.team);
@@ -3034,11 +3123,13 @@
 
   /* ---------- Export ---------- */
 
-  document.getElementById('exportBtn').onclick = function(){
+  // Construye las filas del export (array de arrays) compartidas entre CSV y Excel, para no
+  // repetir la misma l\u00F3gica de "qu\u00E9 contiene cada exportaci\u00F3n" en dos sitios distintos.
+  function buildExportRows(){
     var y=state.year, m=state.month;
     var rows = [];
     if(state.team==='summary'){
-      rows.push(['Nombre','Equipo','Teletrabajo','Vacaciones','Presencial'].join(';'));
+      rows.push(['Nombre','Equipo','Teletrabajo','Vacaciones','Presencial']);
       var nDays = daysInMonth(y,m);
       Object.keys(state.config.teams).forEach(function(teamId){
         var tm = state.config.teams[teamId], sd = state.schedAll[teamId];
@@ -3049,7 +3140,7 @@
             var c=(sd.schedule[person]||{})[d]||'';
             if(c==='T') tw++; else if(c==='V') vac++; else if(c==='') pres++;
           }
-          rows.push([person, tm.name, tw, vac, pres].join(';'));
+          rows.push([person, tm.name, tw, vac, pres]);
         });
       });
     } else {
@@ -3057,21 +3148,37 @@
       var header = ['Nombre'];
       for(var d=1; d<=nDays2; d++){ header.push(String(d)); }
       header.push('TW','VAC');
-      rows.push(header.join(';'));
+      rows.push(header);
       orderedMembers(tm2).forEach(function(person){
         var row = [person];
         for(var d=1; d<=nDays2; d++){ row.push((sd2.schedule[person]||{})[d] || ''); }
         row.push(countCode(sd2,person,'T'), countCode(sd2,person,'V'));
-        rows.push(row.join(';'));
+        rows.push(row);
       });
     }
-    var blob = new Blob(['\uFEFF'+rows.join('\n')], {type:'text/csv;charset=utf-8;'});
+    return rows;
+  }
+
+  document.getElementById('exportBtn').onclick = function(){
+    var rows = buildExportRows();
+    var csv = rows.map(function(row){ return row.join(';'); }).join('\n');
+    var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'teletrabajo_' + state.team + '_' + monthKey(y,m) + '.csv';
+    a.download = 'teletrabajo_' + state.team + '_' + monthKey(state.year,state.month) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  document.getElementById('exportExcelBtn').onclick = function(){
+    if(typeof XLSX==='undefined'){ showToast('No se pudo cargar el generador de Excel (revisa la conexi\u00F3n)', true); return; }
+    var rows = buildExportRows();
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = rows[0].map(function(_, i){ return { wch: i===0 ? 26 : 6 }; });
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, (team().name || 'Resumen').slice(0,31));
+    XLSX.writeFile(wb, 'teletrabajo_' + state.team + '_' + monthKey(state.year,state.month) + '.xlsx');
   };
 
   /* ---------- Init ---------- */

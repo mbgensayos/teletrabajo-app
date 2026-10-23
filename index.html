@@ -13,7 +13,7 @@
      cada apertura si hay una versión más reciente en el servidor y, si la hay, se recarga solo
      una vez (con un parámetro que evita cualquier caché) para traerla, sin que el usuario tenga
      que borrar y volver a añadir el icono. -->
-<meta name="app-build" content="20261023073000">
+<meta name="app-build" content="20261023081500">
 <script>
 (function(){
   try{
@@ -1204,12 +1204,39 @@
     }));
     state.schedAll = {};
     results.forEach(function(r){ state.schedAll[r[0]] = r[1]; });
+    await stripTeletrabajoOnNonWorkingDays(y, m);
   }
-  async function saveSched(teamId){
+  // Corrección defensiva: si un día de este mes ya tenía un "T" puesto (generado o a mano)
+  // ANTES de que se marcara como festivo en el calendario laboral — p.ej. al añadir un
+  // festivo nuevo a mitad de mes, o en datos de antes de tener el calendario bien configurado
+  // — se retira y se guarda solo. El teletrabajo nunca debe quedar asignado en fin de semana
+  // ni festivo, sin importar de dónde venga ese dato. No toca V/P/B/IM/C: esos sí pueden ser
+  // una ausencia real registrada aunque el día acabe siendo festivo.
+  async function stripTeletrabajoOnNonWorkingDays(y, m){
+    var nDays = daysInMonth(y, m);
+    var teamIds = Object.keys(state.schedAll);
+    for(var ti=0; ti<teamIds.length; ti++){
+      var tid = teamIds[ti];
+      var sd = state.schedAll[tid];
+      var changed = false;
+      Object.keys(sd.schedule).forEach(function(person){
+        var days = sd.schedule[person];
+        Object.keys(days).forEach(function(dStr){
+          var d = parseInt(dStr, 10);
+          if(d>=1 && d<=nDays && days[dStr]==='T' && isNonWorkingDay(y, m, d)){
+            delete days[dStr];
+            changed = true;
+          }
+        });
+      });
+      if(changed) await saveSched(tid, true);
+    }
+  }
+  async function saveSched(teamId, silent){
     try{
       await window.storage.set('sched:'+teamId+':'+monthKey(state.year,state.month), JSON.stringify(state.schedAll[teamId]), true);
-      showToast('Guardado ✓');
-    }catch(e){ showToast('Error al guardar', true); }
+      if(!silent) showToast('Guardado ✓');
+    }catch(e){ if(!silent) showToast('Error al guardar', true); }
   }
 
   function team(){ return state.config.teams[state.team]; }
